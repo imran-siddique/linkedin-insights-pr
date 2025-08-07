@@ -34,7 +34,14 @@ import {
   Gauge,
   ArrowUp,
   ArrowDown,
-  Equals
+  Equals,
+  CurrencyDollar,
+  MapPin,
+  Building,
+  GraduationCap,
+  TrendingUpDown,
+  Briefcase,
+  Calculator
 } from '@phosphor-icons/react'
 import { useKV } from '@github/spark/hooks'
 import { toast } from 'sonner'
@@ -48,7 +55,8 @@ import {
   ActivityMetrics,
   VisualBrandingAnalysis,
   CompetitiveAnalysis,
-  CompetitiveProfile
+  CompetitiveProfile,
+  CompensationAnalysis
 } from '@/types/linkedin'
 
 function App() {
@@ -62,6 +70,7 @@ function App() {
   const [activityMetrics, setActivityMetrics] = useKV<ActivityMetrics | null>('activity-metrics', null)
   const [visualBranding, setVisualBranding] = useKV<VisualBrandingAnalysis | null>('visual-branding', null)
   const [competitiveAnalysis, setCompetitiveAnalysis] = useKV<CompetitiveAnalysis | null>('competitive-analysis', null)
+  const [compensationAnalysis, setCompensationAnalysis] = useKV<CompensationAnalysis | null>('compensation-analysis', null)
   const [error, setError] = useState('')
   const [analysisStage, setAnalysisStage] = useState('')
 
@@ -190,6 +199,11 @@ function App() {
       const competitiveData = await linkedInService.performCompetitiveAnalysis(fetchedProfileData)
       setCompetitiveAnalysis(competitiveData)
 
+      // Stage 10: Generate compensation analysis
+      setAnalysisStage('Analyzing salary benchmarks and compensation...')
+      const compensationData = await linkedInService.generateCompensationAnalysis(fetchedProfileData)
+      setCompensationAnalysis(compensationData)
+
       setAnalysisStage('')
       toast.success('Profile analyzed successfully! 🎉')
     } catch (error: any) {
@@ -228,7 +242,8 @@ function App() {
             stage.includes('activity') ? 85 :
             stage.includes('visual') ? 90 :
             stage.includes('competitive') ? 95 :
-            stage.includes('landscape') ? 100 : 5
+            stage.includes('landscape') ? 95 :
+            stage.includes('salary benchmarks') ? 100 : 5
           } className="w-full" />
         </div>
       </CardContent>
@@ -978,6 +993,128 @@ function App() {
     )
   }
 
+  const CompensationOverview = () => {
+    if (!compensationAnalysis) return null
+
+    return (
+      <div className="space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <CurrencyDollar className="h-5 w-5 mr-2" />
+              Your Market Position
+            </CardTitle>
+            <CardDescription>
+              Based on your skills, experience, and industry
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="text-center space-y-2">
+                <div className="flex items-center justify-center">
+                  <CurrencyDollar className="h-6 w-6 text-primary mr-2" />
+                  <span className="text-2xl font-bold">
+                    ${compensationAnalysis.currentMarketPosition.estimatedSalaryRange.median.toLocaleString()}
+                  </span>
+                </div>
+                <p className="text-sm text-muted-foreground">Estimated Median</p>
+                <Badge variant="secondary">
+                  ${compensationAnalysis.currentMarketPosition.estimatedSalaryRange.min.toLocaleString()} - 
+                  ${compensationAnalysis.currentMarketPosition.estimatedSalaryRange.max.toLocaleString()}
+                </Badge>
+              </div>
+
+              <div className="text-center space-y-2">
+                <div className="flex items-center justify-center">
+                  <BarChart className="h-6 w-6 text-accent mr-2" />
+                  <span className="text-2xl font-bold">{compensationAnalysis.currentMarketPosition.percentileRanking}th</span>
+                </div>
+                <p className="text-sm text-muted-foreground">Percentile</p>
+                <Badge variant={compensationAnalysis.currentMarketPosition.percentileRanking >= 70 ? 'default' : 'secondary'}>
+                  {compensationAnalysis.currentMarketPosition.percentileRanking >= 80 ? 'Top performer' :
+                   compensationAnalysis.currentMarketPosition.percentileRanking >= 60 ? 'Above average' :
+                   compensationAnalysis.currentMarketPosition.percentileRanking >= 40 ? 'Average' : 'Below average'}
+                </Badge>
+              </div>
+
+              <div className="text-center space-y-2">
+                <div className="flex items-center justify-center">
+                  <Brain className="h-6 w-6 text-green-500 mr-2" />
+                  <span className="text-2xl font-bold">+{compensationAnalysis.currentMarketPosition.skillPremium}%</span>
+                </div>
+                <p className="text-sm text-muted-foreground">Skill Premium</p>
+                <Badge variant="outline" className="bg-green-50 text-green-700">
+                  Above market
+                </Badge>
+              </div>
+
+              <div className="text-center space-y-2">
+                <div className="flex items-center justify-center">
+                  <MapPin className="h-6 w-6 text-blue-500 mr-2" />
+                  <span className="text-2xl font-bold">
+                    {compensationAnalysis.currentMarketPosition.locationAdjustment >= 0 ? '+' : ''}
+                    {compensationAnalysis.currentMarketPosition.locationAdjustment}%
+                  </span>
+                </div>
+                <p className="text-sm text-muted-foreground">Location Adjustment</p>
+                <Badge variant="outline">
+                  {compensationAnalysis.userProfile.location}
+                </Badge>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <TrendingUpDown className="h-5 w-5 mr-2" />
+              Benchmark Comparison
+            </CardTitle>
+            <CardDescription>
+              How your estimated compensation compares across different dimensions
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {[
+                { label: 'Industry Average', value: compensationAnalysis.benchmarkComparison.industryMedian, icon: Building },
+                { label: 'Role Average', value: compensationAnalysis.benchmarkComparison.roleMedian, icon: Briefcase },
+                { label: 'Location Average', value: compensationAnalysis.benchmarkComparison.locationMedian, icon: MapPin },
+                { label: 'Experience Level', value: compensationAnalysis.benchmarkComparison.experienceMedian, icon: GraduationCap }
+              ].map((benchmark, index) => {
+                const variance = ((compensationAnalysis.benchmarkComparison.userEstimate - benchmark.value) / benchmark.value) * 100
+                const Icon = benchmark.icon
+                
+                return (
+                  <div key={index} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                    <div className="flex items-center">
+                      <Icon className="h-5 w-5 text-muted-foreground mr-3" />
+                      <div>
+                        <p className="text-sm font-medium">{benchmark.label}</p>
+                        <p className="text-sm text-muted-foreground">${benchmark.value.toLocaleString()}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      {variance >= 0 ? (
+                        <ArrowUp className="h-4 w-4 text-green-500" />
+                      ) : (
+                        <ArrowDown className="h-4 w-4 text-red-500" />
+                      )}
+                      <Badge variant={variance >= 0 ? 'default' : 'secondary'}>
+                        {variance >= 0 ? '+' : ''}{variance.toFixed(1)}%
+                      </Badge>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8 max-w-6xl">
@@ -1034,7 +1171,7 @@ function App() {
                 <Info className="h-4 w-4" />
                 <AlertDescription className="text-blue-800">
                   <strong>What we'll analyze:</strong> Profile optimization, skill market value, industry trends, 
-                  competitive benchmarking, content strategy, networking opportunities, and personalized growth recommendations.
+                  competitive benchmarking, salary & compensation analysis, content strategy, networking opportunities, and personalized growth recommendations.
                 </AlertDescription>
               </Alert>
               
@@ -1184,7 +1321,7 @@ function App() {
             </div>
 
             <Tabs defaultValue="recommendations" className="w-full">
-              <TabsList className="grid w-full grid-cols-5">
+              <TabsList className="grid w-full grid-cols-6">
                 <TabsTrigger value="recommendations">
                   <Lightbulb className="h-4 w-4 mr-2" />
                   Recommendations
@@ -1200,6 +1337,10 @@ function App() {
                 <TabsTrigger value="competitive">
                   <BarChart className="h-4 w-4 mr-2" />
                   Competition
+                </TabsTrigger>
+                <TabsTrigger value="salary">
+                  <CurrencyDollar className="h-4 w-4 mr-2" />
+                  Salary
                 </TabsTrigger>
                 <TabsTrigger value="strategy">
                   <Target className="h-4 w-4 mr-2" />
@@ -1325,6 +1466,216 @@ function App() {
                   ) : (
                     <div className="text-center text-muted-foreground py-8">
                       No competitive analysis available. Try analyzing a profile first.
+                    </div>
+                  )}
+                </div>
+              </TabsContent>
+
+              <TabsContent value="salary" className="mt-6">
+                <div className="space-y-6">
+                  <div>
+                    <h3 className="text-2xl font-semibold">Salary & Compensation Analysis</h3>
+                    <p className="text-muted-foreground">
+                      Comprehensive compensation insights based on your skills, experience, and market data.
+                    </p>
+                  </div>
+                  
+                  {compensationAnalysis ? (
+                    <Tabs defaultValue="overview" className="w-full">
+                      <TabsList className="grid w-full grid-cols-3">
+                        <TabsTrigger value="overview">Market Position</TabsTrigger>
+                        <TabsTrigger value="skills">Skill Impact</TabsTrigger>
+                        <TabsTrigger value="benchmarks">Benchmarks</TabsTrigger>
+                      </TabsList>
+                      
+                      <TabsContent value="overview" className="mt-4">
+                        <CompensationOverview />
+                      </TabsContent>
+                      
+                      <TabsContent value="skills" className="mt-4">
+                        <div className="space-y-4">
+                          <h4 className="text-xl font-semibold">Skill Impact on Salary</h4>
+                          <p className="text-muted-foreground">
+                            How your specific skills affect your earning potential in the current market.
+                          </p>
+                          
+                          {compensationAnalysis.skillImpact && compensationAnalysis.skillImpact.length > 0 ? (
+                            <div className="space-y-4">
+                              {compensationAnalysis.skillImpact.slice(0, 6).map((skill, index) => (
+                                <Card key={index}>
+                                  <CardHeader>
+                                    <div className="flex items-center justify-between">
+                                      <CardTitle className="text-lg flex items-center">
+                                        <Brain className="h-5 w-5 mr-2" />
+                                        {skill.skill}
+                                      </CardTitle>
+                                      <div className="flex items-center space-x-2">
+                                        <Badge variant={skill.demandLevel === 'very-high' ? 'default' : 
+                                                        skill.demandLevel === 'high' ? 'secondary' : 'outline'}>
+                                          {skill.demandLevel} demand
+                                        </Badge>
+                                        <Badge variant="outline" className="bg-green-50 text-green-700">
+                                          +{skill.salaryPremium}% premium
+                                        </Badge>
+                                      </div>
+                                    </div>
+                                  </CardHeader>
+                                  <CardContent>
+                                    <div className="space-y-3">
+                                      <div className="flex items-center justify-between">
+                                        <span className="text-sm font-medium">Average Salary Increase:</span>
+                                        <Badge variant="outline" className="bg-green-50 text-green-700">
+                                          +${skill.avgSalaryIncrease.toLocaleString()}
+                                        </Badge>
+                                      </div>
+                                      
+                                      <div>
+                                        <p className="text-sm font-medium mb-2">Top Paying Companies:</p>
+                                        <div className="flex flex-wrap gap-2">
+                                          {skill.topPayingCompanies.slice(0, 4).map((company, idx) => (
+                                            <Badge key={idx} variant="secondary" className="text-xs">
+                                              <Building className="h-3 w-3 mr-1" />
+                                              {company}
+                                            </Badge>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </CardContent>
+                                </Card>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="text-center text-muted-foreground py-8">
+                              No skill impact data available yet.
+                            </div>
+                          )}
+                        </div>
+                      </TabsContent>
+                      
+                      <TabsContent value="benchmarks" className="mt-4">
+                        <div className="space-y-4">
+                          <h4 className="text-xl font-semibold">Industry Salary Benchmarks</h4>
+                          <p className="text-muted-foreground">
+                            Detailed compensation data for similar roles in your industry and location.
+                          </p>
+                          
+                          {compensationAnalysis.industryBenchmarks && compensationAnalysis.industryBenchmarks.length > 0 ? (
+                            <div className="space-y-4">
+                              {compensationAnalysis.industryBenchmarks.slice(0, 8).map((benchmark, index) => (
+                                <Card key={index}>
+                                  <CardHeader>
+                                    <div className="flex items-center justify-between">
+                                      <CardTitle className="text-lg flex items-center">
+                                        <Briefcase className="h-5 w-5 mr-2" />
+                                        {benchmark.role}
+                                      </CardTitle>
+                                      <div className="flex items-center space-x-2">
+                                        <Badge variant="outline" className="capitalize">
+                                          {benchmark.experience}
+                                        </Badge>
+                                        <Badge variant="secondary">
+                                          {benchmark.location}
+                                        </Badge>
+                                        <Badge variant="outline" className="bg-green-50 text-green-700">
+                                          +{benchmark.growthProjection}% growth
+                                        </Badge>
+                                      </div>
+                                    </div>
+                                  </CardHeader>
+                                  <CardContent>
+                                    <div className="space-y-4">
+                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                          <p className="text-sm font-medium mb-1">Base Salary Range</p>
+                                          <div className="space-y-1">
+                                            <div className="flex justify-between text-sm">
+                                              <span className="text-muted-foreground">Min:</span>
+                                              <span className="font-medium">${benchmark.baseSalary.min.toLocaleString()}</span>
+                                            </div>
+                                            <div className="flex justify-between text-sm">
+                                              <span className="text-muted-foreground">Median:</span>
+                                              <span className="font-semibold">${benchmark.baseSalary.median.toLocaleString()}</span>
+                                            </div>
+                                            <div className="flex justify-between text-sm">
+                                              <span className="text-muted-foreground">Max:</span>
+                                              <span className="font-medium">${benchmark.baseSalary.max.toLocaleString()}</span>
+                                            </div>
+                                          </div>
+                                        </div>
+
+                                        <div>
+                                          <p className="text-sm font-medium mb-1">Total Compensation</p>
+                                          <div className="space-y-1">
+                                            <div className="flex justify-between text-sm">
+                                              <span className="text-muted-foreground">Min:</span>
+                                              <span className="font-medium">${benchmark.totalComp.min.toLocaleString()}</span>
+                                            </div>
+                                            <div className="flex justify-between text-sm">
+                                              <span className="text-muted-foreground">Median:</span>
+                                              <span className="font-semibold">${benchmark.totalComp.median.toLocaleString()}</span>
+                                            </div>
+                                            <div className="flex justify-between text-sm">
+                                              <span className="text-muted-foreground">Max:</span>
+                                              <span className="font-medium">${benchmark.totalComp.max.toLocaleString()}</span>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      </div>
+
+                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="flex items-center justify-between">
+                                          <span className="text-sm">Equity Compensation:</span>
+                                          <Badge variant={benchmark.equity.typical ? 'default' : 'outline'}>
+                                            {benchmark.equity.typical ? `Yes (${benchmark.equity.value})` : 'Not typical'}
+                                          </Badge>
+                                        </div>
+                                        <div className="flex items-center justify-between">
+                                          <span className="text-sm">Annual Bonus:</span>
+                                          <Badge variant={benchmark.bonus.typical ? 'default' : 'outline'}>
+                                            {benchmark.bonus.typical ? `${benchmark.bonus.percentage}%` : 'Not typical'}
+                                          </Badge>
+                                        </div>
+                                      </div>
+
+                                      <div>
+                                        <p className="text-sm font-medium mb-2">Key Skills:</p>
+                                        <div className="flex flex-wrap gap-1">
+                                          {benchmark.skills.slice(0, 6).map((skill, idx) => (
+                                            <Badge key={idx} variant="outline" className="text-xs">
+                                              {skill}
+                                            </Badge>
+                                          ))}
+                                        </div>
+                                      </div>
+
+                                      <div>
+                                        <p className="text-sm font-medium mb-2">Top Companies:</p>
+                                        <div className="flex flex-wrap gap-1">
+                                          {benchmark.companies.slice(0, 4).map((company, idx) => (
+                                            <Badge key={idx} variant="secondary" className="text-xs">
+                                              <Building className="h-3 w-3 mr-1" />
+                                              {company}
+                                            </Badge>
+                                          ))}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </CardContent>
+                                </Card>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="text-center text-muted-foreground py-8">
+                              No benchmark data available yet.
+                            </div>
+                          )}
+                        </div>
+                      </TabsContent>
+                    </Tabs>
+                  ) : (
+                    <div className="text-center text-muted-foreground py-8">
+                      No compensation analysis available. Try analyzing a profile first.
                     </div>
                   )}
                 </div>

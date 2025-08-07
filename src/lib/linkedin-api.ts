@@ -1,4 +1,4 @@
-import { ProfileData, CompetitiveProfile, CompetitiveAnalysis } from '../types/linkedin'
+import { ProfileData, CompetitiveProfile, CompetitiveAnalysis, CompensationAnalysis } from '../types/linkedin'
 
 // LinkedIn API configuration
 const LINKEDIN_API_BASE = 'https://api.linkedin.com/v2'
@@ -330,6 +330,165 @@ export class LinkedInService {
     } catch (error) {
       console.error('Error generating competitive profiles:', error)
       return []
+    }
+  }
+
+  /**
+   * Generate comprehensive compensation analysis
+   */
+  async generateCompensationAnalysis(profileData: ProfileData): Promise<CompensationAnalysis> {
+    try {
+      // Generate salary benchmarks based on profile
+      const benchmarkPrompt = spark.llmPrompt`
+        Based on this LinkedIn profile:
+        - Industry: ${profileData.industry}
+        - Experience: ${profileData.experience} years
+        - Skills: ${profileData.skills.join(', ')}
+        - Location: ${profileData.location || 'United States'}
+        
+        Generate comprehensive salary benchmarks and compensation analysis.
+        
+        1. Estimate the user's role based on their headline and skills
+        2. Determine their experience level (entry/mid/senior/executive)
+        3. Provide current market salary ranges
+        4. Analyze skill premiums and market positioning
+        5. Compare to industry, role, and location benchmarks
+        6. Identify high-value skills and their salary impact
+        7. Suggest career progression paths
+        8. Recommend geographic opportunities
+        9. Provide negotiation insights
+        10. Include 8-10 relevant salary benchmarks for similar roles
+        
+        Return as JSON with exact structure:
+        {
+          "userProfile": {
+            "estimatedRole": "string",
+            "experienceLevel": "entry|mid|senior|executive",
+            "location": "string", 
+            "skills": ["skill1", "skill2", ...]
+          },
+          "currentMarketPosition": {
+            "estimatedSalaryRange": {
+              "min": number,
+              "median": number,
+              "max": number
+            },
+            "percentileRanking": number,
+            "skillPremium": number,
+            "locationAdjustment": number
+          },
+          "benchmarkComparison": {
+            "industryMedian": number,
+            "roleMedian": number,
+            "locationMedian": number,
+            "experienceMedian": number,
+            "userEstimate": number,
+            "variance": number
+          },
+          "skillImpact": [{
+            "skill": "string",
+            "salaryPremium": number,
+            "demandLevel": "very-high|high|moderate|low",
+            "avgSalaryIncrease": number,
+            "topPayingCompanies": ["company1", "company2", ...]
+          }],
+          "careerProgression": [{
+            "nextRole": "string",
+            "timeframe": "string",
+            "salaryIncrease": number,
+            "requiredSkills": ["skill1", "skill2", ...],
+            "certifications": ["cert1", "cert2", ...],
+            "growthPath": "string"
+          }],
+          "geographicOpportunities": [{
+            "location": "string",
+            "costOfLivingIndex": number,
+            "averageSalary": number,
+            "jobMarketHealth": "excellent|good|moderate|challenging",
+            "topCompanies": ["company1", "company2", ...],
+            "livingStandard": "higher|similar|lower"
+          }],
+          "negotiationInsights": {
+            "leveragePoints": ["point1", "point2", ...],
+            "marketTrends": ["trend1", "trend2", ...],
+            "timingAdvice": "string",
+            "researchTips": ["tip1", "tip2", ...]
+          },
+          "industryBenchmarks": [{
+            "role": "string",
+            "experience": "entry|mid|senior|executive",
+            "location": "string",
+            "industry": "string",
+            "baseSalary": {
+              "min": number,
+              "median": number,
+              "max": number
+            },
+            "totalComp": {
+              "min": number,
+              "median": number,
+              "max": number
+            },
+            "equity": {
+              "typical": boolean,
+              "value": "string"
+            },
+            "bonus": {
+              "typical": boolean,
+              "percentage": number
+            },
+            "skills": ["skill1", "skill2", ...],
+            "companies": ["company1", "company2", ...],
+            "growthProjection": number
+          }]
+        }
+        
+        Use realistic salary data for ${profileData.industry} industry in 2024. Make skill premiums and salary ranges accurate to current market conditions.
+      `
+
+      const compensationResponse = await spark.llm(benchmarkPrompt, 'gpt-4o-mini', true)
+      const compensationAnalysis = JSON.parse(compensationResponse)
+
+      return compensationAnalysis
+    } catch (error) {
+      console.error('Error generating compensation analysis:', error)
+      // Return a fallback compensation analysis
+      return {
+        userProfile: {
+          estimatedRole: 'Professional',
+          experienceLevel: profileData.experience <= 2 ? 'entry' : profileData.experience <= 5 ? 'mid' : profileData.experience <= 10 ? 'senior' : 'executive',
+          location: profileData.location || 'United States',
+          skills: profileData.skills
+        },
+        currentMarketPosition: {
+          estimatedSalaryRange: {
+            min: 50000,
+            median: 75000,
+            max: 100000
+          },
+          percentileRanking: 50,
+          skillPremium: 5,
+          locationAdjustment: 0
+        },
+        benchmarkComparison: {
+          industryMedian: 75000,
+          roleMedian: 75000,
+          locationMedian: 75000,
+          experienceMedian: 75000,
+          userEstimate: 75000,
+          variance: 0
+        },
+        skillImpact: [],
+        careerProgression: [],
+        geographicOpportunities: [],
+        negotiationInsights: {
+          leveragePoints: [],
+          marketTrends: [],
+          timingAdvice: 'Research market conditions before negotiating',
+          researchTips: []
+        },
+        industryBenchmarks: []
+      }
     }
   }
 

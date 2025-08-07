@@ -148,6 +148,91 @@ export interface CompetitiveProfile {
   growthRate: number // percentage
 }
 
+export interface SalaryBenchmark {
+  role: string
+  experience: 'entry' | 'mid' | 'senior' | 'executive'
+  location: string
+  industry: string
+  baseSalary: {
+    min: number
+    median: number
+    max: number
+  }
+  totalComp: {
+    min: number
+    median: number
+    max: number
+  }
+  equity: {
+    typical: boolean
+    value?: string
+  }
+  bonus: {
+    typical: boolean
+    percentage?: number
+  }
+  skills: string[]
+  companies: string[]
+  growthProjection: number // percentage
+}
+
+export interface CompensationAnalysis {
+  userProfile: {
+    estimatedRole: string
+    experienceLevel: 'entry' | 'mid' | 'senior' | 'executive'
+    location: string
+    skills: string[]
+  }
+  currentMarketPosition: {
+    estimatedSalaryRange: {
+      min: number
+      median: number
+      max: number
+    }
+    percentileRanking: number
+    skillPremium: number // additional percentage for rare skills
+    locationAdjustment: number // cost of living adjustment
+  }
+  benchmarkComparison: {
+    industryMedian: number
+    roleMedian: number
+    locationMedian: number
+    experienceMedian: number
+    userEstimate: number
+    variance: number // percentage difference from median
+  }
+  skillImpact: Array<{
+    skill: string
+    salaryPremium: number // percentage increase
+    demandLevel: 'very-high' | 'high' | 'moderate' | 'low'
+    avgSalaryIncrease: number
+    topPayingCompanies: string[]
+  }>
+  careerProgression: Array<{
+    nextRole: string
+    timeframe: string
+    salaryIncrease: number
+    requiredSkills: string[]
+    certifications: string[]
+    growthPath: string
+  }>
+  geographicOpportunities: Array<{
+    location: string
+    costOfLivingIndex: number
+    averageSalary: number
+    jobMarketHealth: 'excellent' | 'good' | 'moderate' | 'challenging'
+    topCompanies: string[]
+    livingStandard: 'higher' | 'similar' | 'lower'
+  }>
+  negotiationInsights: {
+    leveragePoints: string[]
+    marketTrends: string[]
+    timingAdvice: string
+    researchTips: string[]
+  }
+  industryBenchmarks: SalaryBenchmark[]
+}
+
 export interface CompetitiveAnalysis {
   userProfile: ProfileData
   competitors: CompetitiveProfile[]
