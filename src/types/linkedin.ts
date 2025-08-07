@@ -13,6 +13,20 @@ export interface ProfileData {
   summary?: string
   profilePhotoUrl?: string
   bannerImageUrl?: string
+  hasPhoto?: boolean
+  hasBanner?: boolean
+  lastActive?: string
+  verificationLevel?: 'basic' | 'standard' | 'premium'
+  contentFrequency?: 'daily' | 'weekly' | 'monthly' | 'rarely'
+  networkGrowthRate?: number
+  // Real-time scraping metadata
+  lastUpdated?: string
+  scrapedAt?: number
+  dataFreshness?: 'real-time' | 'cached' | 'estimated'
+  confidenceScore?: number
+  trending?: boolean
+  recentActivitySpike?: boolean
+  networkVelocity?: number
 }
 
 export interface Recommendation {
@@ -272,4 +286,50 @@ export interface CompetitiveAnalysis {
     threats: string[]
     recommendedPosition: string
   }
+}
+
+// Real-time scraping interfaces
+export interface RateLimitConfig {
+  requestsPerMinute?: number
+  requestsPerHour?: number
+  requestsPerDay?: number
+  backoffMultiplier?: number
+  maxBackoffTime?: number
+}
+
+export interface ScrapingSession {
+  id: string
+  identifier: string
+  startTime: number
+  status: 'active' | 'completed' | 'failed' | 'rate-limited'
+  currentStrategy?: string
+  attempts?: number
+  strategies?: string[]
+  result?: ScrapingResult
+  error?: string
+}
+
+export interface ScrapingResult {
+  success: boolean
+  data?: ProfileData
+  error?: string
+  source: 'public-api' | 'website-scraping' | 'ai-analysis' | 'pattern-analysis' | 'cache' | 'scraper'
+  confidence?: number
+  timestamp: number
+  sessionId?: string
+  rateLimitInfo?: {
+    remainingRequests: number
+    resetTime: number
+    currentWindow: string
+  }
+}
+
+export interface ScrapingStats {
+  totalRequests: number
+  successfulScrapes: number
+  failedScrapes: number
+  averageResponseTime: number
+  cacheHitRate: number
+  rateLimitHits: number
+  strategiesUsed: Record<string, number>
 }

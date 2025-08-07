@@ -41,11 +41,17 @@ import {
   GraduationCap,
   TrendingUpDown,
   Briefcase,
-  Calculator
+  Calculator,
+  Globe,
+  Activity,
+  Clock,
+  Timer
 } from '@phosphor-icons/react'
 import { useKV } from '@github/spark/hooks'
 import { toast } from 'sonner'
 import { linkedInService } from '@/lib/linkedin-api'
+import { linkedInScraper } from '@/lib/linkedin-scraper'
+import ScrapingManager from '@/components/ScrapingManager'
 import { 
   ProfileData, 
   Recommendation, 
@@ -56,7 +62,8 @@ import {
   VisualBrandingAnalysis,
   CompetitiveAnalysis,
   CompetitiveProfile,
-  CompensationAnalysis
+  CompensationAnalysis,
+  ScrapingResult
 } from '@/types/linkedin'
 
 function App() {
@@ -73,6 +80,8 @@ function App() {
   const [compensationAnalysis, setCompensationAnalysis] = useKV<CompensationAnalysis | null>('compensation-analysis', null)
   const [error, setError] = useState('')
   const [analysisStage, setAnalysisStage] = useState('')
+  const [scrapingResult, setScrapingResult] = useState<ScrapingResult | null>(null)
+  const [showScrapingManager, setShowScrapingManager] = useState(false)
 
   const analyzeProfile = async () => {
     if (!linkedinUrl.trim()) {
@@ -89,29 +98,69 @@ function App() {
     setIsLoading(true)
     setError('')
     setAnalysisStage('')
+    setShowScrapingManager(true)
 
     try {
-      // Stage 1: Validate profile access
-      setAnalysisStage('Validating LinkedIn profile...')
-      const isValidProfile = await linkedInService.validateProfileAccess(linkedinId)
-      if (!isValidProfile) {
-        throw new Error('Invalid LinkedIn profile format')
+      // The profile data will be handled by the ScrapingManager
+      // Continue with AI analysis after scraping completes
+      
+    } catch (error: any) {
+      console.error('Analysis initialization error:', error)
+      setError(error.message || 'Failed to initialize profile analysis.')
+      toast.error('Analysis initialization failed.')
+      setIsLoading(false)
+    }
+  }
+
+  const handleScrapingComplete = async (result: ScrapingResult) => {
+    try {
+      setScrapingResult(result)
+      
+      if (!result.data) {
+        throw new Error('No profile data received from scraper')
       }
 
-      // Stage 2: Fetch basic profile data
-      setAnalysisStage('Fetching profile information...')
-      const fetchedProfileData = await linkedInService.getProfileData(linkedinUrl.trim())
+      const fetchedProfileData = result.data
       setProfileData(fetchedProfileData)
 
-      // Stage 3: Generate AI-powered recommendations
+      // Continue with enhanced AI analysis
+      await performAIAnalysis(fetchedProfileData)
+      
+      setAnalysisStage('')
+      setShowScrapingManager(false)
+      toast.success(`Profile analyzed successfully via ${result.source}! 🎉`)
+      
+    } catch (error: any) {
+      console.error('Post-scraping analysis error:', error)
+      setError(error.message || 'Failed to complete analysis after scraping.')
+      toast.error('Analysis completion failed.')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleScrapingError = (errorMessage: string) => {
+    console.error('Scraping error:', errorMessage)
+    setError(`Scraping failed: ${errorMessage}`)
+    setIsLoading(false)
+    setShowScrapingManager(false)
+    toast.error('Profile scraping failed.')
+  }
+
+  const performAIAnalysis = async (profileData: ProfileData) => {
+    const linkedinId = linkedInService.extractLinkedInUsername(linkedinUrl.trim())
+    
+    try {
+      // Stage 1: Generate AI-powered recommendations
       setAnalysisStage('Generating personalized recommendations...')
-      const prompt = spark.llmPrompt`Based on this LinkedIn profile data: ${JSON.stringify(fetchedProfileData)}, generate 8 specific, actionable recommendations for improving their LinkedIn presence and professional growth. Focus heavily on their skills: ${fetchedProfileData.skills.join(', ')}. For each recommendation, consider:
+      const prompt = spark.llmPrompt`Based on this LinkedIn profile data: ${JSON.stringify(profileData)}, generate 8 specific, actionable recommendations for improving their LinkedIn presence and professional growth. Focus heavily on their skills: ${profileData.skills.join(', ')}. For each recommendation, consider:
       - Current market trends for their skills
       - Opportunities to showcase expertise
       - Skills to develop or highlight
       - Ways to position themselves in the market
-      - Their experience level of ${fetchedProfileData.experience} years
-      - Their industry: ${fetchedProfileData.industry}
+      - Their experience level of ${profileData.experience} years
+      - Their industry: ${profileData.industry}
+      - Real-time data freshness: ${profileData.dataFreshness || 'unknown'}
 
       Format as JSON array with fields: category (content/networking/optimization/skills), title, description, priority (high/medium/low), action, relatedSkills (array of relevant skills), impactScore (1-10).`
       
@@ -131,14 +180,15 @@ function App() {
         setRecommendations([])
       }
 
-      // Stage 4: Generate skill-aware trending topics
+      // Stage 2: Generate skill-aware trending topics
       setAnalysisStage('Analyzing industry trends...')
-      const trendPrompt = spark.llmPrompt`For someone in the ${fetchedProfileData.industry} industry with these skills: ${fetchedProfileData.skills.join(', ')} and ${fetchedProfileData.experience} years of experience, identify 6 current trending topics they should engage with on LinkedIn. Consider:
+      const trendPrompt = spark.llmPrompt`For someone in the ${profileData.industry} industry with these skills: ${profileData.skills.join(', ')} and ${profileData.experience} years of experience, identify 6 current trending topics they should engage with on LinkedIn. Consider:
       - Emerging technologies related to their skills
       - Industry shifts affecting their expertise
       - New applications of their existing skills
       - Complementary skills they should develop
       - Their professional level and experience
+      - Data recency: profile data is ${profileData.dataFreshness || 'estimated'}
       
       Format as JSON array with fields: topic, relevanceScore (1-10), hashtags (array), suggestedAction, relatedSkills (array), marketDemand (high/medium/low), difficulty (beginner/intermediate/advanced), estimatedReach (number), competitionLevel (low/medium/high).`
       
@@ -153,9 +203,9 @@ function App() {
         setTrendingTopics([])
       }
 
-      // Stage 5: Generate skill insights
+      // Stage 3: Generate skill insights
       setAnalysisStage('Evaluating skill market value...')
-      const skillPrompt = spark.llmPrompt`Analyze these skills for market opportunities: ${fetchedProfileData.skills.join(', ')}. For each skill, provide detailed insights on:
+      const skillPrompt = spark.llmPrompt`Analyze these skills for market opportunities: ${profileData.skills.join(', ')}. For each skill, provide detailed insights on:
       - Current market demand and growth potential
       - Growth trajectory (growing/stable/declining)
       - Salary impact potential
@@ -164,7 +214,8 @@ function App() {
       - Demand score out of 100
       - Average salary increase potential
       
-      Consider the person has ${fetchedProfileData.experience} years of experience in ${fetchedProfileData.industry}.
+      Consider the person has ${profileData.experience} years of experience in ${profileData.industry}.
+      Profile data quality: ${profileData.confidenceScore ? Math.round(profileData.confidenceScore * 100) : 'unknown'}% confidence.
       
       Format as JSON array with fields: skill, marketDemand (high/medium/low), growth (growing/stable/declining), salary_impact (high/medium/low), learning_resources (array), related_opportunities (array), demandScore (1-100), averageSalaryIncrease (percentage string).`
       
@@ -179,40 +230,35 @@ function App() {
         setSkillInsights([])
       }
 
-      // Stage 6: Generate profile insights
+      // Stage 4: Generate profile insights
       setAnalysisStage('Analyzing profile strengths...')
-      const insights = await linkedInService.getProfileInsights(linkedinId, fetchedProfileData)
+      const insights = await linkedInService.getProfileInsights(linkedinId, profileData)
       setProfileInsights(insights)
 
-      // Stage 7: Analyze activity metrics
+      // Stage 5: Analyze activity metrics
       setAnalysisStage('Calculating activity metrics...')
-      const metrics = await linkedInService.getActivityMetrics(fetchedProfileData)
+      const metrics = await linkedInService.getActivityMetrics(profileData)
       setActivityMetrics(metrics)
 
-      // Stage 8: Analyze visual branding
+      // Stage 6: Analyze visual branding
       setAnalysisStage('Evaluating visual branding...')
       const branding = await linkedInService.analyzeVisualBranding(linkedinId)
       setVisualBranding(branding)
 
-      // Stage 9: Perform competitive analysis
+      // Stage 7: Perform competitive analysis
       setAnalysisStage('Analyzing competitive landscape...')
-      const competitiveData = await linkedInService.performCompetitiveAnalysis(fetchedProfileData)
+      const competitiveData = await linkedInService.performCompetitiveAnalysis(profileData)
       setCompetitiveAnalysis(competitiveData)
 
-      // Stage 10: Generate compensation analysis
+      // Stage 8: Generate compensation analysis
       setAnalysisStage('Analyzing salary benchmarks and compensation...')
-      const compensationData = await linkedInService.generateCompensationAnalysis(fetchedProfileData)
+      const compensationData = await linkedInService.generateCompensationAnalysis(profileData)
       setCompensationAnalysis(compensationData)
 
-      setAnalysisStage('')
-      toast.success('Profile analyzed successfully! 🎉')
     } catch (error: any) {
-      console.error('Analysis error:', error)
-      setError(error.message || 'Failed to analyze profile. Please try again.')
-      toast.error('Analysis failed. Please try again.')
-    } finally {
-      setIsLoading(false)
-      setAnalysisStage('')
+      console.error('AI analysis error:', error)
+      // Don't throw error here, as we still have the scraped profile data
+      console.warn('Some AI analysis steps failed, but profile data is available')
     }
   }
 
@@ -1170,7 +1216,7 @@ function App() {
               <Alert className="border-blue-200 bg-blue-50">
                 <Info className="h-4 w-4" />
                 <AlertDescription className="text-blue-800">
-                  <strong>What we'll analyze:</strong> Profile optimization, skill market value, industry trends, 
+                  <strong>What we'll analyze:</strong> Real-time profile scraping, skill market value, industry trends, 
                   competitive benchmarking, salary & compensation analysis, content strategy, networking opportunities, and personalized growth recommendations.
                 </AlertDescription>
               </Alert>
@@ -1187,8 +1233,61 @@ function App() {
 
         {isLoading && <LoadingStateCard stage={analysisStage} />}
 
-        {profileData && !isLoading && (
+        {/* Real-time Scraping Manager */}
+        {showScrapingManager && (
+          <ScrapingManager 
+            identifier={linkedInService.extractLinkedInUsername(linkedinUrl.trim()) || ''}
+            onScrapingComplete={handleScrapingComplete}
+            onScrapingError={handleScrapingError}
+            autoStart={true}
+          />
+        )}
+
+        {/* Profile Analysis Results */}
+        {profileData && !isLoading && !showScrapingManager && (
           <div className="space-y-8">
+            {/* Data Source & Quality Indicator */}
+            {scrapingResult && (
+              <Card className="border-l-4 border-l-primary">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <div className="flex items-center space-x-2">
+                        <Globe className="h-4 w-4 text-primary" />
+                        <span className="text-sm font-medium">Data Source:</span>
+                        <Badge variant="default">{scrapingResult.source}</Badge>
+                      </div>
+                      
+                      {scrapingResult.confidence && (
+                        <div className="flex items-center space-x-2">
+                          <Shield className="h-4 w-4 text-green-600" />
+                          <span className="text-sm font-medium">Confidence:</span>
+                          <Badge variant="outline" className="bg-green-50 text-green-700">
+                            {Math.round(scrapingResult.confidence * 100)}%
+                          </Badge>
+                        </div>
+                      )}
+                      
+                      {profileData.dataFreshness && (
+                        <div className="flex items-center space-x-2">
+                          <Activity className="h-4 w-4 text-blue-600" />
+                          <span className="text-sm font-medium">Freshness:</span>
+                          <Badge variant="secondary" className="capitalize">
+                            {profileData.dataFreshness}
+                          </Badge>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="flex items-center space-x-2 text-xs text-muted-foreground">
+                      <Clock className="h-3 w-3" />
+                      <span>Updated {new Date(scrapingResult.timestamp).toLocaleTimeString()}</span>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+            
             {/* Profile Insights */}
             <ProfileInsightsCard />
 
