@@ -1,4 +1,4 @@
-import { ProfileData } from '../types/linkedin'
+import { ProfileData, CompetitiveProfile, CompetitiveAnalysis } from '../types/linkedin'
 
 // LinkedIn API configuration
 const LINKEDIN_API_BASE = 'https://api.linkedin.com/v2'
@@ -258,6 +258,220 @@ export class LinkedInService {
       return /^[a-zA-Z0-9\-\.]{3,100}$/.test(username)
     } catch {
       return false
+    }
+  }
+
+  /**
+   * Generate competitive profiles for industry analysis
+   */
+  async generateCompetitiveProfiles(userProfile: ProfileData, sampleSize: number = 10): Promise<CompetitiveProfile[]> {
+    try {
+      const prompt = spark.llmPrompt`
+        Based on this user profile in the ${userProfile.industry} industry with ${userProfile.experience} years of experience and skills: ${userProfile.skills.join(', ')},
+        
+        Generate ${sampleSize} realistic competitive profiles of professionals in the same industry and similar experience level.
+        Create a mix of:
+        - 30% peers at similar level
+        - 40% professionals slightly ahead (more followers/engagement)
+        - 20% industry leaders/influencers
+        - 10% up-and-coming professionals
+        
+        For each competitor, include:
+        - Realistic name variations
+        - Industry-appropriate headlines
+        - Follower counts ranging from ${Math.floor(userProfile.followers * 0.5)} to ${userProfile.followers * 5}
+        - Connection counts between 500-5000
+        - Engagement rates between 2-12%
+        - Post counts between 20-200
+        - Profile scores between 65-95
+        - Relevant skills (some overlapping, some unique)
+        - Experience levels between ${Math.max(1, userProfile.experience - 3)} and ${userProfile.experience + 8} years
+        - Key strengths that explain their success
+        - Content strategy themes
+        - Growth rates between -2% and 15%
+        
+        Ensure diversity in profiles and make them realistic for the ${userProfile.industry} industry.
+        
+        Return as JSON array with exact structure:
+        [{
+          "id": "comp-1",
+          "name": "string",
+          "headline": "string", 
+          "followers": number,
+          "connections": number,
+          "engagement": number,
+          "posts": number,
+          "industry": "${userProfile.industry}",
+          "skills": ["skill1", "skill2", ...],
+          "experience": number,
+          "profileScore": number,
+          "keyStrengths": ["strength1", "strength2", ...],
+          "contentStrategy": ["theme1", "theme2", ...],
+          "isInfluencer": boolean,
+          "growthRate": number
+        }, ...]
+      `
+
+      const response = await spark.llm(prompt, 'gpt-4o-mini', true)
+      const competitorsData = JSON.parse(response)
+      
+      return Array.isArray(competitorsData) 
+        ? competitorsData.map((comp: any, index: number) => ({
+            ...comp,
+            id: `comp-${index + 1}`,
+            industry: userProfile.industry,
+            skills: Array.isArray(comp.skills) ? comp.skills : [],
+            keyStrengths: Array.isArray(comp.keyStrengths) ? comp.keyStrengths : [],
+            contentStrategy: Array.isArray(comp.contentStrategy) ? comp.contentStrategy : [],
+            isInfluencer: comp.isInfluencer || false,
+            growthRate: comp.growthRate || 0
+          }))
+        : []
+    } catch (error) {
+      console.error('Error generating competitive profiles:', error)
+      return []
+    }
+  }
+
+  /**
+   * Perform comprehensive competitive analysis
+   */
+  async performCompetitiveAnalysis(userProfile: ProfileData): Promise<CompetitiveAnalysis> {
+    try {
+      // Generate competitive profiles
+      const competitors = await this.generateCompetitiveProfiles(userProfile, 12)
+      
+      if (competitors.length === 0) {
+        throw new Error('Unable to generate competitive analysis')
+      }
+
+      // Calculate industry benchmarks
+      const industryBenchmarks = {
+        avgFollowers: Math.floor(competitors.reduce((sum, comp) => sum + comp.followers, 0) / competitors.length),
+        avgEngagement: Math.floor((competitors.reduce((sum, comp) => sum + comp.engagement, 0) / competitors.length) * 10) / 10,
+        avgPostsPerMonth: Math.floor(competitors.reduce((sum, comp) => sum + comp.posts, 0) / competitors.length / 12),
+        avgConnections: Math.floor(competitors.reduce((sum, comp) => sum + comp.connections, 0) / competitors.length),
+        avgProfileScore: Math.floor(competitors.reduce((sum, comp) => sum + comp.profileScore, 0) / competitors.length)
+      }
+
+      // Calculate user ranking
+      const allProfiles = [userProfile, ...competitors]
+      const sortByFollowers = [...allProfiles].sort((a, b) => b.followers - a.followers)
+      const sortByEngagement = [...allProfiles].sort((a, b) => b.engagement - a.engagement)
+      const sortByProfileScore = [...allProfiles].sort((a, b) => b.profileScore - a.profileScore)
+      
+      const followersRank = sortByFollowers.findIndex(p => p.name === userProfile.name) + 1
+      const engagementRank = sortByEngagement.findIndex(p => p.name === userProfile.name) + 1
+      const profileScoreRank = sortByProfileScore.findIndex(p => p.name === userProfile.name) + 1
+      const overallRank = Math.floor((followersRank + engagementRank + profileScoreRank) / 3)
+
+      const userRanking = {
+        followers: { 
+          rank: followersRank, 
+          percentile: Math.floor(((allProfiles.length - followersRank) / allProfiles.length) * 100) 
+        },
+        engagement: { 
+          rank: engagementRank, 
+          percentile: Math.floor(((allProfiles.length - engagementRank) / allProfiles.length) * 100) 
+        },
+        profileScore: { 
+          rank: profileScoreRank, 
+          percentile: Math.floor(((allProfiles.length - profileScoreRank) / allProfiles.length) * 100) 
+        },
+        overallScore: { 
+          rank: overallRank, 
+          percentile: Math.floor(((allProfiles.length - overallRank) / allProfiles.length) * 100) 
+        }
+      }
+
+      // Generate gap analysis using AI
+      const gapPrompt = spark.llmPrompt`
+        Analyze gaps between user profile and industry competitors:
+        
+        User: ${JSON.stringify(userProfile)}
+        Industry Averages: ${JSON.stringify(industryBenchmarks)}
+        Top Competitors: ${JSON.stringify(competitors.slice(0, 5))}
+        
+        Identify 6 key gaps and provide specific, actionable recommendations for each.
+        Focus on: followers, engagement, content quality, skills, profile optimization, and networking.
+        
+        Return JSON array:
+        [{
+          "category": "followers|engagement|content|skills|optimization",
+          "currentValue": number,
+          "benchmarkValue": number, 
+          "gap": number,
+          "recommendation": "string",
+          "priority": "high|medium|low",
+          "timeToImprove": "string"
+        }, ...]
+      `
+
+      const gapResponse = await spark.llm(gapPrompt, 'gpt-4o-mini', true)
+      const gapAnalysis = JSON.parse(gapResponse)
+
+      // Generate competitor insights
+      const insightsPrompt = spark.llmPrompt`
+        Analyze these top competitors and extract key insights:
+        ${JSON.stringify(competitors.slice(0, 6))}
+        
+        For each competitor, identify:
+        - Key takeaways for success
+        - Content themes they focus on
+        - Posting patterns and strategies
+        - Unique approaches worth copying
+        
+        Return JSON array:
+        [{
+          "competitorName": "string",
+          "keyTakeaways": ["takeaway1", "takeaway2", ...],
+          "contentThemes": ["theme1", "theme2", ...],
+          "postingPatterns": "string",
+          "uniqueStrategies": ["strategy1", "strategy2", ...]
+        }, ...]
+      `
+
+      const insightsResponse = await spark.llm(insightsPrompt, 'gpt-4o-mini', true)
+      const competitorInsights = JSON.parse(insightsResponse)
+
+      // Determine market positioning
+      const positioningPrompt = spark.llmPrompt`
+        Based on user profile: ${JSON.stringify(userProfile)}
+        Industry ranking: ${userRanking.overallScore.percentile}th percentile
+        And competitive landscape analysis, determine:
+        
+        1. Current market position (leader/challenger/follower/niche)
+        2. Key strength areas  
+        3. Opportunity areas for growth
+        4. Potential threats or challenges
+        5. Recommended positioning strategy
+        
+        Return JSON:
+        {
+          "currentPosition": "leader|challenger|follower|niche",
+          "strengthAreas": ["area1", "area2", ...],
+          "opportunityAreas": ["area1", "area2", ...], 
+          "threats": ["threat1", "threat2", ...],
+          "recommendedPosition": "string"
+        }
+      `
+
+      const positioningResponse = await spark.llm(positioningPrompt, 'gpt-4o-mini', true)
+      const marketPositioning = JSON.parse(positioningResponse)
+
+      return {
+        userProfile,
+        competitors,
+        industryBenchmarks,
+        userRanking,
+        gapAnalysis: Array.isArray(gapAnalysis) ? gapAnalysis : [],
+        competitorInsights: Array.isArray(competitorInsights) ? competitorInsights : [],
+        marketPositioning
+      }
+
+    } catch (error) {
+      console.error('Error performing competitive analysis:', error)
+      throw new Error('Failed to generate competitive analysis')
     }
   }
 }

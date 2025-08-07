@@ -27,7 +27,14 @@ import {
   Trophy,
   CheckCircle,
   AlertCircle,
-  Info
+  Info,
+  BarChart,
+  Crown,
+  Shield,
+  Gauge,
+  ArrowUp,
+  ArrowDown,
+  Equals
 } from '@phosphor-icons/react'
 import { useKV } from '@github/spark/hooks'
 import { toast } from 'sonner'
@@ -39,7 +46,9 @@ import {
   SkillInsight, 
   ProfileInsights,
   ActivityMetrics,
-  VisualBrandingAnalysis
+  VisualBrandingAnalysis,
+  CompetitiveAnalysis,
+  CompetitiveProfile
 } from '@/types/linkedin'
 
 function App() {
@@ -52,6 +61,7 @@ function App() {
   const [profileInsights, setProfileInsights] = useKV<ProfileInsights | null>('profile-insights', null)
   const [activityMetrics, setActivityMetrics] = useKV<ActivityMetrics | null>('activity-metrics', null)
   const [visualBranding, setVisualBranding] = useKV<VisualBrandingAnalysis | null>('visual-branding', null)
+  const [competitiveAnalysis, setCompetitiveAnalysis] = useKV<CompetitiveAnalysis | null>('competitive-analysis', null)
   const [error, setError] = useState('')
   const [analysisStage, setAnalysisStage] = useState('')
 
@@ -175,6 +185,11 @@ function App() {
       const branding = await linkedInService.analyzeVisualBranding(linkedinId)
       setVisualBranding(branding)
 
+      // Stage 9: Perform competitive analysis
+      setAnalysisStage('Analyzing competitive landscape...')
+      const competitiveData = await linkedInService.performCompetitiveAnalysis(fetchedProfileData)
+      setCompetitiveAnalysis(competitiveData)
+
       setAnalysisStage('')
       toast.success('Profile analyzed successfully! 🎉')
     } catch (error: any) {
@@ -205,13 +220,15 @@ function App() {
         <div className="mt-4">
           <Progress value={
             stage.includes('Validating') ? 10 :
-            stage.includes('Fetching profile') ? 25 :
-            stage.includes('recommendations') ? 40 :
-            stage.includes('trends') ? 55 :
-            stage.includes('skill market') ? 70 :
-            stage.includes('strengths') ? 85 :
-            stage.includes('activity') ? 95 :
-            stage.includes('visual') ? 100 : 5
+            stage.includes('Fetching profile') ? 20 :
+            stage.includes('recommendations') ? 35 :
+            stage.includes('trends') ? 50 :
+            stage.includes('skill market') ? 65 :
+            stage.includes('strengths') ? 75 :
+            stage.includes('activity') ? 85 :
+            stage.includes('visual') ? 90 :
+            stage.includes('competitive') ? 95 :
+            stage.includes('landscape') ? 100 : 5
           } className="w-full" />
         </div>
       </CardContent>
@@ -578,6 +595,389 @@ function App() {
     </Card>
   )
 
+  const CompetitiveAnalysisOverview = () => {
+    if (!competitiveAnalysis) return null
+
+    return (
+      <div className="space-y-6">
+        {/* Market Positioning Card */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Crown className="h-5 w-5 mr-2" />
+              Your Market Position
+            </CardTitle>
+            <CardDescription>
+              How you rank against industry peers
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="text-center space-y-2">
+                <div className="flex items-center justify-center">
+                  <Users className="h-6 w-6 text-primary mr-2" />
+                  <span className="text-2xl font-bold">#{competitiveAnalysis.userRanking.followers.rank}</span>
+                </div>
+                <p className="text-sm text-muted-foreground">Followers Rank</p>
+                <Badge variant={competitiveAnalysis.userRanking.followers.percentile >= 70 ? 'default' : 'secondary'}>
+                  {competitiveAnalysis.userRanking.followers.percentile}th percentile
+                </Badge>
+              </div>
+
+              <div className="text-center space-y-2">
+                <div className="flex items-center justify-center">
+                  <TrendingUp className="h-6 w-6 text-accent mr-2" />
+                  <span className="text-2xl font-bold">#{competitiveAnalysis.userRanking.engagement.rank}</span>
+                </div>
+                <p className="text-sm text-muted-foreground">Engagement Rank</p>
+                <Badge variant={competitiveAnalysis.userRanking.engagement.percentile >= 70 ? 'default' : 'secondary'}>
+                  {competitiveAnalysis.userRanking.engagement.percentile}th percentile
+                </Badge>
+              </div>
+
+              <div className="text-center space-y-2">
+                <div className="flex items-center justify-center">
+                  <Gauge className="h-6 w-6 text-green-500 mr-2" />
+                  <span className="text-2xl font-bold">#{competitiveAnalysis.userRanking.profileScore.rank}</span>
+                </div>
+                <p className="text-sm text-muted-foreground">Profile Score</p>
+                <Badge variant={competitiveAnalysis.userRanking.profileScore.percentile >= 70 ? 'default' : 'secondary'}>
+                  {competitiveAnalysis.userRanking.profileScore.percentile}th percentile
+                </Badge>
+              </div>
+
+              <div className="text-center space-y-2">
+                <div className="flex items-center justify-center">
+                  <Star className="h-6 w-6 text-yellow-500 mr-2" />
+                  <span className="text-2xl font-bold">#{competitiveAnalysis.userRanking.overallScore.rank}</span>
+                </div>
+                <p className="text-sm text-muted-foreground">Overall Rank</p>
+                <Badge variant={competitiveAnalysis.userRanking.overallScore.percentile >= 70 ? 'default' : 'secondary'}>
+                  {competitiveAnalysis.userRanking.overallScore.percentile}th percentile
+                </Badge>
+              </div>
+            </div>
+
+            <Separator className="my-4" />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <h4 className="font-semibold text-sm mb-2 flex items-center">
+                  <Shield className="h-4 w-4 mr-2" />
+                  Current Position: <Badge className="ml-2">{competitiveAnalysis.marketPositioning.currentPosition}</Badge>
+                </h4>
+                <p className="text-sm text-muted-foreground">
+                  {competitiveAnalysis.marketPositioning.recommendedPosition}
+                </p>
+              </div>
+              <div className="space-y-2">
+                <p className="font-semibold text-sm">Strength Areas:</p>
+                <div className="flex flex-wrap gap-1">
+                  {competitiveAnalysis.marketPositioning.strengthAreas.slice(0, 3).map((area, index) => (
+                    <Badge key={index} variant="outline" className="text-xs bg-green-50 text-green-700">
+                      {area}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Industry Benchmarks */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <BarChart className="h-5 w-5 mr-2" />
+              Industry Benchmarks
+            </CardTitle>
+            <CardDescription>
+              How your metrics compare to {competitiveAnalysis.userProfile.industry} industry averages
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium">Followers</span>
+                  <div className="flex items-center">
+                    {competitiveAnalysis.userProfile.followers >= competitiveAnalysis.industryBenchmarks.avgFollowers ? (
+                      <ArrowUp className="h-4 w-4 text-green-500 mr-1" />
+                    ) : (
+                      <ArrowDown className="h-4 w-4 text-red-500 mr-1" />
+                    )}
+                    <span className="text-sm font-bold">
+                      {((competitiveAnalysis.userProfile.followers / competitiveAnalysis.industryBenchmarks.avgFollowers - 1) * 100).toFixed(0)}%
+                    </span>
+                  </div>
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  You: {competitiveAnalysis.userProfile.followers.toLocaleString()} | 
+                  Avg: {competitiveAnalysis.industryBenchmarks.avgFollowers.toLocaleString()}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium">Engagement</span>
+                  <div className="flex items-center">
+                    {competitiveAnalysis.userProfile.engagement >= competitiveAnalysis.industryBenchmarks.avgEngagement ? (
+                      <ArrowUp className="h-4 w-4 text-green-500 mr-1" />
+                    ) : (
+                      <ArrowDown className="h-4 w-4 text-red-500 mr-1" />
+                    )}
+                    <span className="text-sm font-bold">
+                      {((competitiveAnalysis.userProfile.engagement / competitiveAnalysis.industryBenchmarks.avgEngagement - 1) * 100).toFixed(0)}%
+                    </span>
+                  </div>
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  You: {competitiveAnalysis.userProfile.engagement}% | 
+                  Avg: {competitiveAnalysis.industryBenchmarks.avgEngagement}%
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium">Profile Score</span>
+                  <div className="flex items-center">
+                    {competitiveAnalysis.userProfile.profileScore >= competitiveAnalysis.industryBenchmarks.avgProfileScore ? (
+                      <ArrowUp className="h-4 w-4 text-green-500 mr-1" />
+                    ) : (
+                      <ArrowDown className="h-4 w-4 text-red-500 mr-1" />
+                    )}
+                    <span className="text-sm font-bold">
+                      {((competitiveAnalysis.userProfile.profileScore / competitiveAnalysis.industryBenchmarks.avgProfileScore - 1) * 100).toFixed(0)}%
+                    </span>
+                  </div>
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  You: {competitiveAnalysis.userProfile.profileScore} | 
+                  Avg: {competitiveAnalysis.industryBenchmarks.avgProfileScore}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  const CompetitiveGapAnalysis = () => {
+    if (!competitiveAnalysis?.gapAnalysis) return null
+
+    return (
+      <div className="space-y-4">
+        {competitiveAnalysis.gapAnalysis.map((gap, index) => (
+          <Card key={index}>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg capitalize flex items-center">
+                  {gap.category === 'followers' && <Users className="h-5 w-5 mr-2" />}
+                  {gap.category === 'engagement' && <TrendingUp className="h-5 w-5 mr-2" />}
+                  {gap.category === 'content' && <MessageSquare className="h-5 w-5 mr-2" />}
+                  {gap.category === 'skills' && <Brain className="h-5 w-5 mr-2" />}
+                  {gap.category === 'optimization' && <Gauge className="h-5 w-5 mr-2" />}
+                  {gap.category} Gap
+                </CardTitle>
+                <div className="flex items-center space-x-2">
+                  <Badge variant={gap.priority === 'high' ? 'destructive' : gap.priority === 'medium' ? 'default' : 'secondary'}>
+                    {gap.priority} priority
+                  </Badge>
+                  <Badge variant="outline">
+                    {gap.timeToImprove}
+                  </Badge>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <div className="grid grid-cols-3 gap-4 text-center">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Your Score</p>
+                    <p className="text-lg font-bold">{gap.currentValue}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Industry Avg</p>
+                    <p className="text-lg font-bold">{gap.benchmarkValue}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Gap</p>
+                    <div className="flex items-center justify-center">
+                      {gap.gap < 0 ? (
+                        <ArrowDown className="h-4 w-4 text-red-500 mr-1" />
+                      ) : (
+                        <ArrowUp className="h-4 w-4 text-green-500 mr-1" />
+                      )}
+                      <p className={`text-lg font-bold ${gap.gap < 0 ? 'text-red-500' : 'text-green-500'}`}>
+                        {Math.abs(gap.gap)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                <Separator />
+                <div>
+                  <p className="text-sm font-medium mb-2">Recommended Action:</p>
+                  <p className="text-sm text-muted-foreground">{gap.recommendation}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    )
+  }
+
+  const TopCompetitors = () => {
+    if (!competitiveAnalysis?.competitors) return null
+
+    const topCompetitors = competitiveAnalysis.competitors
+      .sort((a, b) => b.followers - a.followers)
+      .slice(0, 6)
+
+    return (
+      <div className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {topCompetitors.map((competitor, index) => (
+            <Card key={competitor.id} className="relative">
+              {competitor.isInfluencer && (
+                <Crown className="absolute top-4 right-4 h-5 w-5 text-yellow-500" />
+              )}
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg">{competitor.name}</CardTitle>
+                  <Badge variant={index < 2 ? 'default' : 'secondary'}>
+                    #{index + 1}
+                  </Badge>
+                </div>
+                <CardDescription className="text-sm">
+                  {competitor.headline}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <p className="text-muted-foreground">Followers</p>
+                      <p className="font-semibold">{competitor.followers.toLocaleString()}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Engagement</p>
+                      <p className="font-semibold">{competitor.engagement}%</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Experience</p>
+                      <p className="font-semibold">{competitor.experience} years</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Growth Rate</p>
+                      <div className="flex items-center">
+                        {competitor.growthRate >= 0 ? (
+                          <ArrowUp className="h-3 w-3 text-green-500 mr-1" />
+                        ) : (
+                          <ArrowDown className="h-3 w-3 text-red-500 mr-1" />
+                        )}
+                        <p className={`font-semibold text-xs ${competitor.growthRate >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                          {Math.abs(competitor.growthRate)}%
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <p className="text-sm font-medium mb-1">Key Strengths:</p>
+                    <div className="flex flex-wrap gap-1">
+                      {competitor.keyStrengths.slice(0, 3).map((strength, idx) => (
+                        <Badge key={idx} variant="outline" className="text-xs">
+                          {strength}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="text-sm font-medium mb-1">Content Themes:</p>
+                    <div className="flex flex-wrap gap-1">
+                      {competitor.contentStrategy.slice(0, 2).map((theme, idx) => (
+                        <Badge key={idx} variant="secondary" className="text-xs">
+                          {theme}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  const CompetitorInsights = () => {
+    if (!competitiveAnalysis?.competitorInsights) return null
+
+    return (
+      <div className="space-y-4">
+        {competitiveAnalysis.competitorInsights.slice(0, 4).map((insight, index) => (
+          <Card key={index}>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center">
+                <Brain className="h-5 w-5 mr-2" />
+                Insights from {insight.competitorName}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div>
+                  <p className="text-sm font-medium mb-2">Key Takeaways:</p>
+                  <div className="space-y-1">
+                    {insight.keyTakeaways.slice(0, 3).map((takeaway, idx) => (
+                      <div key={idx} className="flex items-start">
+                        <CheckCircle className="h-4 w-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
+                        <span className="text-sm">{takeaway}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <p className="text-sm font-medium mb-2">Content Themes:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {insight.contentThemes.map((theme, idx) => (
+                      <Badge key={idx} variant="outline" className="text-xs">
+                        {theme}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <p className="text-sm font-medium mb-1">Posting Pattern:</p>
+                  <p className="text-sm text-muted-foreground">{insight.postingPatterns}</p>
+                </div>
+
+                {insight.uniqueStrategies.length > 0 && (
+                  <div>
+                    <p className="text-sm font-medium mb-2">Unique Strategies:</p>
+                    <div className="space-y-1">
+                      {insight.uniqueStrategies.slice(0, 2).map((strategy, idx) => (
+                        <div key={idx} className="flex items-start">
+                          <Lightbulb className="h-4 w-4 text-yellow-500 mr-2 mt-0.5 flex-shrink-0" />
+                          <span className="text-sm">{strategy}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8 max-w-6xl">
@@ -634,7 +1034,7 @@ function App() {
                 <Info className="h-4 w-4" />
                 <AlertDescription className="text-blue-800">
                   <strong>What we'll analyze:</strong> Profile optimization, skill market value, industry trends, 
-                  content strategy, networking opportunities, and personalized growth recommendations.
+                  competitive benchmarking, content strategy, networking opportunities, and personalized growth recommendations.
                 </AlertDescription>
               </Alert>
               
@@ -784,7 +1184,7 @@ function App() {
             </div>
 
             <Tabs defaultValue="recommendations" className="w-full">
-              <TabsList className="grid w-full grid-cols-4">
+              <TabsList className="grid w-full grid-cols-5">
                 <TabsTrigger value="recommendations">
                   <Lightbulb className="h-4 w-4 mr-2" />
                   Recommendations
@@ -796,6 +1196,10 @@ function App() {
                 <TabsTrigger value="trends">
                   <TrendingUp className="h-4 w-4 mr-2" />
                   Trends
+                </TabsTrigger>
+                <TabsTrigger value="competitive">
+                  <BarChart className="h-4 w-4 mr-2" />
+                  Competition
                 </TabsTrigger>
                 <TabsTrigger value="strategy">
                   <Target className="h-4 w-4 mr-2" />
@@ -863,6 +1267,66 @@ function App() {
                       </div>
                     )}
                   </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="competitive" className="mt-6">
+                <div className="space-y-6">
+                  <div>
+                    <h3 className="text-2xl font-semibold">Competitive Analysis</h3>
+                    <p className="text-muted-foreground">
+                      See how you stack up against industry peers and identify growth opportunities.
+                    </p>
+                  </div>
+                  
+                  {competitiveAnalysis ? (
+                    <Tabs defaultValue="overview" className="w-full">
+                      <TabsList className="grid w-full grid-cols-4">
+                        <TabsTrigger value="overview">Overview</TabsTrigger>
+                        <TabsTrigger value="gaps">Gap Analysis</TabsTrigger>
+                        <TabsTrigger value="competitors">Top Competitors</TabsTrigger>
+                        <TabsTrigger value="insights">Insights</TabsTrigger>
+                      </TabsList>
+                      
+                      <TabsContent value="overview" className="mt-4">
+                        <CompetitiveAnalysisOverview />
+                      </TabsContent>
+                      
+                      <TabsContent value="gaps" className="mt-4">
+                        <div className="space-y-4">
+                          <h4 className="text-xl font-semibold">Performance Gaps & Opportunities</h4>
+                          <p className="text-muted-foreground">
+                            Key areas where you can improve compared to industry benchmarks.
+                          </p>
+                          <CompetitiveGapAnalysis />
+                        </div>
+                      </TabsContent>
+                      
+                      <TabsContent value="competitors" className="mt-4">
+                        <div className="space-y-4">
+                          <h4 className="text-xl font-semibold">Top Performers in Your Industry</h4>
+                          <p className="text-muted-foreground">
+                            Leading professionals you can learn from and benchmark against.
+                          </p>
+                          <TopCompetitors />
+                        </div>
+                      </TabsContent>
+                      
+                      <TabsContent value="insights" className="mt-4">
+                        <div className="space-y-4">
+                          <h4 className="text-xl font-semibold">Competitive Intelligence</h4>
+                          <p className="text-muted-foreground">
+                            Strategic insights derived from analyzing top performers in your field.
+                          </p>
+                          <CompetitorInsights />
+                        </div>
+                      </TabsContent>
+                    </Tabs>
+                  ) : (
+                    <div className="text-center text-muted-foreground py-8">
+                      No competitive analysis available. Try analyzing a profile first.
+                    </div>
+                  )}
                 </div>
               </TabsContent>
 

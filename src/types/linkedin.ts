@@ -129,3 +129,62 @@ export interface NetworkingOpportunities {
     focus: string
   }>
 }
+
+export interface CompetitiveProfile {
+  id: string
+  name: string
+  headline: string
+  followers: number
+  connections: number
+  engagement: number
+  posts: number
+  industry: string
+  skills: string[]
+  experience: number
+  profileScore: number
+  keyStrengths: string[]
+  contentStrategy: string[]
+  isInfluencer: boolean
+  growthRate: number // percentage
+}
+
+export interface CompetitiveAnalysis {
+  userProfile: ProfileData
+  competitors: CompetitiveProfile[]
+  industryBenchmarks: {
+    avgFollowers: number
+    avgEngagement: number
+    avgPostsPerMonth: number
+    avgConnections: number
+    avgProfileScore: number
+  }
+  userRanking: {
+    followers: { rank: number, percentile: number }
+    engagement: { rank: number, percentile: number }
+    profileScore: { rank: number, percentile: number }
+    overallScore: { rank: number, percentile: number }
+  }
+  gapAnalysis: Array<{
+    category: 'followers' | 'engagement' | 'content' | 'skills' | 'optimization'
+    currentValue: number
+    benchmarkValue: number
+    gap: number
+    recommendation: string
+    priority: 'high' | 'medium' | 'low'
+    timeToImprove: string
+  }>
+  competitorInsights: Array<{
+    competitorName: string
+    keyTakeaways: string[]
+    contentThemes: string[]
+    postingPatterns: string
+    uniqueStrategies: string[]
+  }>
+  marketPositioning: {
+    currentPosition: 'leader' | 'challenger' | 'follower' | 'niche'
+    strengthAreas: string[]
+    opportunityAreas: string[]
+    threats: string[]
+    recommendedPosition: string
+  }
+}
