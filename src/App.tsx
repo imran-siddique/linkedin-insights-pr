@@ -24,53 +24,23 @@ import {
   Brain,
   Star,
   BookOpen,
-  Trophy
+  Trophy,
+  CheckCircle,
+  AlertCircle,
+  Info
 } from '@phosphor-icons/react'
 import { useKV } from '@github/spark/hooks'
 import { toast } from 'sonner'
-
-interface ProfileData {
-  name: string
-  headline: string
-  followers: number
-  connections: number
-  posts: number
-  engagement: number
-  profileScore: number
-  industry: string
-  skills: string[]
-  experience: number // years of experience
-}
-
-interface Recommendation {
-  id: string
-  category: 'content' | 'networking' | 'optimization' | 'skills'
-  title: string
-  description: string
-  priority: 'high' | 'medium' | 'low'
-  action: string
-  relatedSkills?: string[]
-  impactScore: number
-}
-
-interface TrendingTopic {
-  topic: string
-  relevanceScore: number
-  hashtags: string[]
-  suggestedAction: string
-  relatedSkills: string[]
-  marketDemand: 'high' | 'medium' | 'low'
-  difficulty: 'beginner' | 'intermediate' | 'advanced'
-}
-
-interface SkillInsight {
-  skill: string
-  marketDemand: 'high' | 'medium' | 'low'
-  growth: 'growing' | 'stable' | 'declining'
-  salary_impact: 'high' | 'medium' | 'low'
-  learning_resources: string[]
-  related_opportunities: string[]
-}
+import { linkedInService } from '@/lib/linkedin-api'
+import { 
+  ProfileData, 
+  Recommendation, 
+  TrendingTopic, 
+  SkillInsight, 
+  ProfileInsights,
+  ActivityMetrics,
+  VisualBrandingAnalysis
+} from '@/types/linkedin'
 
 function App() {
   const [linkedinUrl, setLinkedinUrl] = useState('')
@@ -79,21 +49,11 @@ function App() {
   const [recommendations, setRecommendations] = useKV<Recommendation[]>('recommendations', [])
   const [trendingTopics, setTrendingTopics] = useKV<TrendingTopic[]>('trending-topics', [])
   const [skillInsights, setSkillInsights] = useKV<SkillInsight[]>('skill-insights', [])
+  const [profileInsights, setProfileInsights] = useKV<ProfileInsights | null>('profile-insights', null)
+  const [activityMetrics, setActivityMetrics] = useKV<ActivityMetrics | null>('activity-metrics', null)
+  const [visualBranding, setVisualBranding] = useKV<VisualBrandingAnalysis | null>('visual-branding', null)
   const [error, setError] = useState('')
-
-  const extractLinkedInId = (url: string) => {
-    const patterns = [
-      /linkedin\.com\/in\/([^\/\?]+)/,
-      /linkedin\.com\/pub\/([^\/\?]+)/,
-      /^([a-zA-Z0-9\-]+)$/ // Direct username
-    ]
-    
-    for (const pattern of patterns) {
-      const match = url.match(pattern)
-      if (match) return match[1]
-    }
-    return null
-  }
+  const [analysisStage, setAnalysisStage] = useState('')
 
   const analyzeProfile = async () => {
     if (!linkedinUrl.trim()) {
@@ -101,7 +61,7 @@ function App() {
       return
     }
 
-    const linkedinId = extractLinkedInId(linkedinUrl.trim())
+    const linkedinId = linkedInService.extractLinkedInUsername(linkedinUrl.trim())
     if (!linkedinId) {
       setError('Please enter a valid LinkedIn profile URL or username')
       return
@@ -109,32 +69,30 @@ function App() {
 
     setIsLoading(true)
     setError('')
+    setAnalysisStage('')
 
     try {
-      // Simulate profile data analysis
-      await new Promise(resolve => setTimeout(resolve, 2000))
-      
-      const mockProfileData: ProfileData = {
-        name: 'Professional User',
-        headline: 'Software Engineer | Technology Enthusiast',
-        followers: Math.floor(Math.random() * 5000) + 500,
-        connections: Math.floor(Math.random() * 1000) + 200,
-        posts: Math.floor(Math.random() * 100) + 20,
-        engagement: Math.floor(Math.random() * 8) + 2,
-        profileScore: Math.floor(Math.random() * 30) + 70,
-        industry: 'Technology',
-        skills: ['JavaScript', 'React', 'Node.js', 'Python', 'AWS', 'Docker', 'Machine Learning', 'Data Analysis'],
-        experience: Math.floor(Math.random() * 10) + 2
+      // Stage 1: Validate profile access
+      setAnalysisStage('Validating LinkedIn profile...')
+      const isValidProfile = await linkedInService.validateProfileAccess(linkedinId)
+      if (!isValidProfile) {
+        throw new Error('Invalid LinkedIn profile format')
       }
 
-      setProfileData(mockProfileData)
+      // Stage 2: Fetch basic profile data
+      setAnalysisStage('Fetching profile information...')
+      const fetchedProfileData = await linkedInService.getProfileData(linkedinUrl.trim())
+      setProfileData(fetchedProfileData)
 
-      // Generate AI recommendations based on skills and profile
-      const prompt = spark.llmPrompt`Based on this LinkedIn profile data: ${JSON.stringify(mockProfileData)}, generate 8 specific, actionable recommendations for improving their LinkedIn presence and professional growth. Focus heavily on their skills: ${mockProfileData.skills.join(', ')}. For each recommendation, consider:
+      // Stage 3: Generate AI-powered recommendations
+      setAnalysisStage('Generating personalized recommendations...')
+      const prompt = spark.llmPrompt`Based on this LinkedIn profile data: ${JSON.stringify(fetchedProfileData)}, generate 8 specific, actionable recommendations for improving their LinkedIn presence and professional growth. Focus heavily on their skills: ${fetchedProfileData.skills.join(', ')}. For each recommendation, consider:
       - Current market trends for their skills
       - Opportunities to showcase expertise
       - Skills to develop or highlight
       - Ways to position themselves in the market
+      - Their experience level of ${fetchedProfileData.experience} years
+      - Their industry: ${fetchedProfileData.industry}
 
       Format as JSON array with fields: category (content/networking/optimization/skills), title, description, priority (high/medium/low), action, relatedSkills (array of relevant skills), impactScore (1-10).`
       
@@ -154,14 +112,16 @@ function App() {
         setRecommendations([])
       }
 
-      // Generate skill-aware trending topics
-      const trendPrompt = spark.llmPrompt`For someone in the ${mockProfileData.industry} industry with these skills: ${mockProfileData.skills.join(', ')}, identify 6 current trending topics they should engage with on LinkedIn. Consider:
+      // Stage 4: Generate skill-aware trending topics
+      setAnalysisStage('Analyzing industry trends...')
+      const trendPrompt = spark.llmPrompt`For someone in the ${fetchedProfileData.industry} industry with these skills: ${fetchedProfileData.skills.join(', ')} and ${fetchedProfileData.experience} years of experience, identify 6 current trending topics they should engage with on LinkedIn. Consider:
       - Emerging technologies related to their skills
       - Industry shifts affecting their expertise
       - New applications of their existing skills
       - Complementary skills they should develop
+      - Their professional level and experience
       
-      Format as JSON array with fields: topic, relevanceScore (1-10), hashtags (array), suggestedAction, relatedSkills (array), marketDemand (high/medium/low), difficulty (beginner/intermediate/advanced).`
+      Format as JSON array with fields: topic, relevanceScore (1-10), hashtags (array), suggestedAction, relatedSkills (array), marketDemand (high/medium/low), difficulty (beginner/intermediate/advanced), estimatedReach (number), competitionLevel (low/medium/high).`
       
       try {
         const trendsResponse = await spark.llm(trendPrompt, 'gpt-4o-mini', true)
@@ -174,15 +134,20 @@ function App() {
         setTrendingTopics([])
       }
 
-      // Generate skill insights
-      const skillPrompt = spark.llmPrompt`Analyze these skills for market opportunities: ${mockProfileData.skills.join(', ')}. For each skill, provide insights on:
-      - Current market demand
+      // Stage 5: Generate skill insights
+      setAnalysisStage('Evaluating skill market value...')
+      const skillPrompt = spark.llmPrompt`Analyze these skills for market opportunities: ${fetchedProfileData.skills.join(', ')}. For each skill, provide detailed insights on:
+      - Current market demand and growth potential
       - Growth trajectory (growing/stable/declining)
       - Salary impact potential
-      - Learning resources to advance
+      - Specific learning resources to advance
       - Related opportunities in the market
+      - Demand score out of 100
+      - Average salary increase potential
       
-      Format as JSON array with fields: skill, marketDemand (high/medium/low), growth (growing/stable/declining), salary_impact (high/medium/low), learning_resources (array), related_opportunities (array).`
+      Consider the person has ${fetchedProfileData.experience} years of experience in ${fetchedProfileData.industry}.
+      
+      Format as JSON array with fields: skill, marketDemand (high/medium/low), growth (growing/stable/declining), salary_impact (high/medium/low), learning_resources (array), related_opportunities (array), demandScore (1-100), averageSalaryIncrease (percentage string).`
       
       try {
         const skillResponse = await spark.llm(skillPrompt, 'gpt-4o-mini', true)
@@ -195,14 +160,172 @@ function App() {
         setSkillInsights([])
       }
 
-      toast.success('Profile analyzed successfully!')
-    } catch (error) {
+      // Stage 6: Generate profile insights
+      setAnalysisStage('Analyzing profile strengths...')
+      const insights = await linkedInService.getProfileInsights(linkedinId, fetchedProfileData)
+      setProfileInsights(insights)
+
+      // Stage 7: Analyze activity metrics
+      setAnalysisStage('Calculating activity metrics...')
+      const metrics = await linkedInService.getActivityMetrics(fetchedProfileData)
+      setActivityMetrics(metrics)
+
+      // Stage 8: Analyze visual branding
+      setAnalysisStage('Evaluating visual branding...')
+      const branding = await linkedInService.analyzeVisualBranding(linkedinId)
+      setVisualBranding(branding)
+
+      setAnalysisStage('')
+      toast.success('Profile analyzed successfully! 🎉')
+    } catch (error: any) {
       console.error('Analysis error:', error)
-      setError('Failed to analyze profile. Please try again.')
+      setError(error.message || 'Failed to analyze profile. Please try again.')
       toast.error('Analysis failed. Please try again.')
     } finally {
       setIsLoading(false)
+      setAnalysisStage('')
     }
+  }
+
+  const LoadingStateCard = ({ stage }: { stage: string }) => (
+    <Card className="mb-6">
+      <CardContent className="p-6">
+        <div className="flex items-center space-x-4">
+          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+          <div className="space-y-2 flex-1">
+            <p className="text-sm font-medium text-foreground">Analyzing your LinkedIn profile...</p>
+            {stage && (
+              <p className="text-sm text-muted-foreground flex items-center">
+                <Info className="h-4 w-4 mr-2" />
+                {stage}
+              </p>
+            )}
+          </div>
+        </div>
+        <div className="mt-4">
+          <Progress value={
+            stage.includes('Validating') ? 10 :
+            stage.includes('Fetching profile') ? 25 :
+            stage.includes('recommendations') ? 40 :
+            stage.includes('trends') ? 55 :
+            stage.includes('skill market') ? 70 :
+            stage.includes('strengths') ? 85 :
+            stage.includes('activity') ? 95 :
+            stage.includes('visual') ? 100 : 5
+          } className="w-full" />
+        </div>
+      </CardContent>
+    </Card>
+  )
+
+  const ProfileInsightsCard = () => {
+    if (!profileInsights) return null
+
+    return (
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center text-green-700">
+              <CheckCircle className="h-5 w-5 mr-2" />
+              Profile Strengths
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {profileInsights.strengths.map((strength, index) => (
+                <div key={index} className="flex items-start">
+                  <Star className="h-4 w-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
+                  <span className="text-sm">{strength}</span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center text-orange-700">
+              <AlertCircle className="h-5 w-5 mr-2" />
+              Areas for Improvement
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {profileInsights.improvements.map((improvement, index) => (
+                <div key={index} className="flex items-start">
+                  <TrendingUp className="h-4 w-4 text-orange-500 mr-2 mt-0.5 flex-shrink-0" />
+                  <span className="text-sm">{improvement}</span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  const ActivityMetricsCard = () => {
+    if (!activityMetrics) return null
+
+    return (
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <Calendar className="h-5 w-5 mr-2" />
+            Activity & Engagement Insights
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <p className="text-sm font-medium">Posting Frequency</p>
+              <p className="text-2xl font-bold text-primary">{activityMetrics.avgPostsPerWeek}</p>
+              <p className="text-xs text-muted-foreground">posts per week</p>
+            </div>
+            
+            <div className="space-y-2">
+              <p className="text-sm font-medium">Engagement Trend</p>
+              <div className="flex items-center">
+                {activityMetrics.engagementTrend === 'increasing' ? (
+                  <TrendingUp className="h-5 w-5 text-green-500 mr-1" />
+                ) : (
+                  <TrendingDown className="h-5 w-5 text-gray-500 mr-1" />
+                )}
+                <span className="text-sm font-medium capitalize">{activityMetrics.engagementTrend}</span>
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <p className="text-sm font-medium">Monthly Growth</p>
+              <p className="text-2xl font-bold text-primary">+{activityMetrics.audienceGrowth}</p>
+              <p className="text-xs text-muted-foreground">followers</p>
+            </div>
+          </div>
+          
+          <Separator className="my-4" />
+          
+          <div className="space-y-3">
+            <p className="text-sm font-medium">Best Posting Times</p>
+            <div className="flex flex-wrap gap-2">
+              {activityMetrics.bestPostingTimes.map((time, index) => (
+                <Badge key={index} variant="outline" className="text-xs">
+                  {time}
+                </Badge>
+              ))}
+            </div>
+            
+            <p className="text-sm font-medium mt-3">Best Posting Days</p>
+            <div className="flex flex-wrap gap-2">
+              {activityMetrics.bestPostingDays.map((day, index) => (
+                <Badge key={index} variant="secondary" className="text-xs">
+                  {day}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    )
   }
 
   const MetricCard = ({ title, value, change, icon: Icon }: { 
@@ -299,20 +422,36 @@ function App() {
             }>
               {insight.growth}
             </Badge>
+            {insight.demandScore && (
+              <Badge variant="outline" className="bg-purple-50 text-purple-700">
+                Score: {insight.demandScore}/100
+              </Badge>
+            )}
           </div>
         </div>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium">Salary Impact:</span>
-            <Badge variant="outline" className={
-              insight.salary_impact === 'high' ? 'bg-green-50 text-green-700' :
-              insight.salary_impact === 'medium' ? 'bg-yellow-50 text-yellow-700' :
-              'bg-gray-50 text-gray-700'
-            }>
-              {insight.salary_impact}
-            </Badge>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium">Salary Impact:</span>
+              <Badge variant="outline" className={
+                insight.salary_impact === 'high' ? 'bg-green-50 text-green-700' :
+                insight.salary_impact === 'medium' ? 'bg-yellow-50 text-yellow-700' :
+                'bg-gray-50 text-gray-700'
+              }>
+                {insight.salary_impact}
+              </Badge>
+            </div>
+            
+            {insight.averageSalaryIncrease && (
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">Avg. Increase:</span>
+                <Badge variant="outline" className="bg-green-50 text-green-700">
+                  {insight.averageSalaryIncrease}
+                </Badge>
+              </div>
+            )}
           </div>
           
           <div>
@@ -366,20 +505,40 @@ function App() {
             <Badge variant={trend.marketDemand === 'high' ? 'default' : 'outline'}>
               {trend.marketDemand} demand
             </Badge>
+            {trend.competitionLevel && (
+              <Badge variant="outline" className={
+                trend.competitionLevel === 'low' ? 'bg-green-50 text-green-700' :
+                trend.competitionLevel === 'medium' ? 'bg-yellow-50 text-yellow-700' :
+                'bg-red-50 text-red-700'
+              }>
+                {trend.competitionLevel} competition
+              </Badge>
+            )}
           </div>
         </div>
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium">Difficulty:</span>
-            <Badge variant="outline" className={
-              trend.difficulty === 'beginner' ? 'bg-green-50 text-green-700' :
-              trend.difficulty === 'intermediate' ? 'bg-yellow-50 text-yellow-700' :
-              'bg-red-50 text-red-700'
-            }>
-              {trend.difficulty}
-            </Badge>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium">Difficulty:</span>
+              <Badge variant="outline" className={
+                trend.difficulty === 'beginner' ? 'bg-green-50 text-green-700' :
+                trend.difficulty === 'intermediate' ? 'bg-yellow-50 text-yellow-700' :
+                'bg-red-50 text-red-700'
+              }>
+                {trend.difficulty}
+              </Badge>
+            </div>
+            
+            {trend.estimatedReach && (
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">Est. Reach:</span>
+                <Badge variant="outline" className="bg-blue-50 text-blue-700">
+                  {trend.estimatedReach.toLocaleString()}
+                </Badge>
+              </div>
+            )}
           </div>
           
           {trend.relatedSkills && trend.relatedSkills.length > 0 && (
@@ -438,63 +597,68 @@ function App() {
               Analyze Your LinkedIn Profile
             </CardTitle>
             <CardDescription>
-              Enter your LinkedIn profile URL or username to get started
+              Enter your LinkedIn profile URL or username to get comprehensive insights and growth recommendations
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex space-x-4">
-              <div className="flex-1">
-                <Label htmlFor="linkedin-url">LinkedIn Profile URL or Username</Label>
-                <Input
-                  id="linkedin-url"
-                  placeholder="linkedin.com/in/username or just username"
-                  value={linkedinUrl}
-                  onChange={(e) => setLinkedinUrl(e.target.value)}
-                  className="mt-1"
-                />
+            <div className="space-y-4">
+              <div className="flex space-x-4">
+                <div className="flex-1">
+                  <Label htmlFor="linkedin-url">LinkedIn Profile URL or Username</Label>
+                  <Input
+                    id="linkedin-url"
+                    placeholder="linkedin.com/in/username or just username"
+                    value={linkedinUrl}
+                    onChange={(e) => setLinkedinUrl(e.target.value)}
+                    className="mt-1"
+                  />
+                </div>
+                <div className="flex items-end">
+                  <Button onClick={analyzeProfile} disabled={isLoading} className="px-6">
+                    {isLoading ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        Analyzing...
+                      </>
+                    ) : (
+                      <>
+                        <Zap className="h-4 w-4 mr-2" />
+                        Analyze Profile
+                      </>
+                    )}
+                  </Button>
+                </div>
               </div>
-              <div className="flex items-end">
-                <Button onClick={analyzeProfile} disabled={isLoading} className="px-6">
-                  {isLoading ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      Analyzing...
-                    </>
-                  ) : (
-                    <>
-                      <Zap className="h-4 w-4 mr-2" />
-                      Analyze
-                    </>
-                  )}
-                </Button>
-              </div>
-            </div>
-            {error && (
-              <Alert className="mt-4 border-red-200 bg-red-50">
-                <AlertDescription className="text-red-800">{error}</AlertDescription>
+              
+              <Alert className="border-blue-200 bg-blue-50">
+                <Info className="h-4 w-4" />
+                <AlertDescription className="text-blue-800">
+                  <strong>What we'll analyze:</strong> Profile optimization, skill market value, industry trends, 
+                  content strategy, networking opportunities, and personalized growth recommendations.
+                </AlertDescription>
               </Alert>
-            )}
+              
+              {error && (
+                <Alert className="border-red-200 bg-red-50">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription className="text-red-800">{error}</AlertDescription>
+                </Alert>
+              )}
+            </div>
           </CardContent>
         </Card>
 
-        {isLoading && (
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {[...Array(4)].map((_, i) => (
-                <Card key={i}>
-                  <CardContent className="p-6">
-                    <Skeleton className="h-8 w-8 rounded mb-4" />
-                    <Skeleton className="h-4 w-20 mb-2" />
-                    <Skeleton className="h-6 w-16" />
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
-        )}
+        {isLoading && <LoadingStateCard stage={analysisStage} />}
 
         {profileData && !isLoading && (
           <div className="space-y-8">
+            {/* Profile Insights */}
+            <ProfileInsightsCard />
+
+            {/* Activity Metrics */}
+            <ActivityMetricsCard />
+
+            {/* Main Metrics */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <MetricCard
                 title="Followers"
@@ -550,28 +714,74 @@ function App() {
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Profile Optimization Score</CardTitle>
-                <CardDescription>
-                  Your current profile completeness and optimization level
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-medium">Overall Score</span>
-                    <span className="text-sm font-medium">{profileData.profileScore}%</span>
+            {/* Profile Optimization & Visual Branding */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Profile Optimization Score</CardTitle>
+                  <CardDescription>
+                    Your current profile completeness and optimization level
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium">Overall Score</span>
+                      <span className="text-sm font-medium">{profileData.profileScore}%</span>
+                    </div>
+                    <Progress value={profileData.profileScore} className="w-full" />
+                    <p className="text-sm text-muted-foreground">
+                      {profileData.profileScore >= 80 ? 'Excellent! Your profile is well-optimized.' :
+                       profileData.profileScore >= 60 ? 'Good profile, but there\'s room for improvement.' :
+                       'Your profile needs optimization to maximize visibility.'}
+                    </p>
                   </div>
-                  <Progress value={profileData.profileScore} className="w-full" />
-                  <p className="text-sm text-muted-foreground">
-                    {profileData.profileScore >= 80 ? 'Excellent! Your profile is well-optimized.' :
-                     profileData.profileScore >= 60 ? 'Good profile, but there\'s room for improvement.' :
-                     'Your profile needs optimization to maximize visibility.'}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+
+              {visualBranding && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center">
+                      <Star className="h-5 w-5 mr-2" />
+                      Visual Branding
+                    </CardTitle>
+                    <CardDescription>
+                      Profile photo and banner analysis
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">Profile Photo</span>
+                        <Badge variant={visualBranding.hasPhoto ? 'default' : 'destructive'}>
+                          {visualBranding.hasPhoto ? 'Present' : 'Missing'}
+                        </Badge>
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm">Custom Banner</span>
+                        <Badge variant={visualBranding.hasBanner ? 'default' : 'secondary'}>
+                          {visualBranding.hasBanner ? 'Present' : 'Default'}
+                        </Badge>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <p className="text-sm font-medium">Recommendations:</p>
+                        <div className="space-y-1">
+                          {visualBranding.recommendations.slice(0, 2).map((rec, index) => (
+                            <p key={index} className="text-xs text-muted-foreground flex items-start">
+                              <TrendingUp className="h-3 w-3 mr-1 mt-0.5 flex-shrink-0" />
+                              {rec}
+                            </p>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
 
             <Tabs defaultValue="recommendations" className="w-full">
               <TabsList className="grid w-full grid-cols-4">
