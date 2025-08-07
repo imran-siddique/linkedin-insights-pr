@@ -322,6 +322,8 @@ function App() {
       </CardContent>
     </Card>
   )
+
+  const TrendCard = ({ trend }: { trend: TrendingTopic }) => (
     <Card className="mb-4">
       <CardHeader>
         <div className="flex items-center justify-between">
