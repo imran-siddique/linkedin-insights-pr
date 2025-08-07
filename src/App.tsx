@@ -138,13 +138,21 @@ function App() {
 
       Format as JSON array with fields: category (content/networking/optimization/skills), title, description, priority (high/medium/low), action, relatedSkills (array of relevant skills), impactScore (1-10).`
       
-      const recommendationsResponse = await spark.llm(prompt, 'gpt-4o-mini', true)
-      const generatedRecommendations = JSON.parse(recommendationsResponse).map((rec: any, index: number) => ({
-        ...rec,
-        id: `rec-${index}`
-      }))
+      try {
+        const recommendationsResponse = await spark.llm(prompt, 'gpt-4o-mini', true)
+        const parsedRecommendations = JSON.parse(recommendationsResponse)
+        const generatedRecommendations = Array.isArray(parsedRecommendations) 
+          ? parsedRecommendations.map((rec: any, index: number) => ({
+              ...rec,
+              id: `rec-${index}`
+            }))
+          : []
 
-      setRecommendations(generatedRecommendations)
+        setRecommendations(generatedRecommendations)
+      } catch (parseError) {
+        console.error('Failed to parse recommendations:', parseError)
+        setRecommendations([])
+      }
 
       // Generate skill-aware trending topics
       const trendPrompt = spark.llmPrompt`For someone in the ${mockProfileData.industry} industry with these skills: ${mockProfileData.skills.join(', ')}, identify 6 current trending topics they should engage with on LinkedIn. Consider:
@@ -155,10 +163,16 @@ function App() {
       
       Format as JSON array with fields: topic, relevanceScore (1-10), hashtags (array), suggestedAction, relatedSkills (array), marketDemand (high/medium/low), difficulty (beginner/intermediate/advanced).`
       
-      const trendsResponse = await spark.llm(trendPrompt, 'gpt-4o-mini', true)
-      const generatedTrends = JSON.parse(trendsResponse)
+      try {
+        const trendsResponse = await spark.llm(trendPrompt, 'gpt-4o-mini', true)
+        const parsedTrends = JSON.parse(trendsResponse)
+        const generatedTrends = Array.isArray(parsedTrends) ? parsedTrends : []
 
-      setTrendingTopics(generatedTrends)
+        setTrendingTopics(generatedTrends)
+      } catch (parseError) {
+        console.error('Failed to parse trends:', parseError)
+        setTrendingTopics([])
+      }
 
       // Generate skill insights
       const skillPrompt = spark.llmPrompt`Analyze these skills for market opportunities: ${mockProfileData.skills.join(', ')}. For each skill, provide insights on:
@@ -170,10 +184,16 @@ function App() {
       
       Format as JSON array with fields: skill, marketDemand (high/medium/low), growth (growing/stable/declining), salary_impact (high/medium/low), learning_resources (array), related_opportunities (array).`
       
-      const skillResponse = await spark.llm(skillPrompt, 'gpt-4o-mini', true)
-      const generatedSkillInsights = JSON.parse(skillResponse)
+      try {
+        const skillResponse = await spark.llm(skillPrompt, 'gpt-4o-mini', true)
+        const parsedSkillInsights = JSON.parse(skillResponse)
+        const generatedSkillInsights = Array.isArray(parsedSkillInsights) ? parsedSkillInsights : []
 
-      setSkillInsights(generatedSkillInsights)
+        setSkillInsights(generatedSkillInsights)
+      } catch (parseError) {
+        console.error('Failed to parse skill insights:', parseError)
+        setSkillInsights([])
+      }
 
       toast.success('Profile analyzed successfully!')
     } catch (error) {
@@ -298,24 +318,32 @@ function App() {
           <div>
             <p className="text-sm font-medium mb-2">Learning Resources:</p>
             <div className="space-y-1">
-              {insight.learning_resources.slice(0, 3).map((resource, index) => (
-                <div key={index} className="flex items-center text-sm text-muted-foreground">
-                  <BookOpen className="h-4 w-4 mr-2" />
-                  {resource}
-                </div>
-              ))}
+              {insight.learning_resources && insight.learning_resources.length > 0 ? (
+                insight.learning_resources.slice(0, 3).map((resource, index) => (
+                  <div key={index} className="flex items-center text-sm text-muted-foreground">
+                    <BookOpen className="h-4 w-4 mr-2" />
+                    {resource}
+                  </div>
+                ))
+              ) : (
+                <div className="text-sm text-muted-foreground">No resources available</div>
+              )}
             </div>
           </div>
           
           <div>
             <p className="text-sm font-medium mb-2">Related Opportunities:</p>
             <div className="space-y-1">
-              {insight.related_opportunities.slice(0, 2).map((opportunity, index) => (
-                <div key={index} className="flex items-center text-sm text-muted-foreground">
-                  <Star className="h-4 w-4 mr-2" />
-                  {opportunity}
-                </div>
-              ))}
+              {insight.related_opportunities && insight.related_opportunities.length > 0 ? (
+                insight.related_opportunities.slice(0, 2).map((opportunity, index) => (
+                  <div key={index} className="flex items-center text-sm text-muted-foreground">
+                    <Star className="h-4 w-4 mr-2" />
+                    {opportunity}
+                  </div>
+                ))
+              ) : (
+                <div className="text-sm text-muted-foreground">No opportunities available</div>
+              )}
             </div>
           </div>
         </div>
@@ -368,11 +396,17 @@ function App() {
           )}
           
           <div className="flex flex-wrap gap-2">
-            {trend.hashtags.map((hashtag, index) => (
-              <Badge key={index} variant="outline" className="text-xs">
-                #{hashtag}
+            {trend.hashtags && trend.hashtags.length > 0 ? (
+              trend.hashtags.map((hashtag, index) => (
+                <Badge key={index} variant="outline" className="text-xs">
+                  #{hashtag}
+                </Badge>
+              ))
+            ) : (
+              <Badge variant="outline" className="text-xs text-muted-foreground">
+                No hashtags available
               </Badge>
-            ))}
+            )}
           </div>
           
           <p className="text-sm text-muted-foreground">{trend.suggestedAction}</p>
@@ -501,11 +535,17 @@ function App() {
               </CardHeader>
               <CardContent>
                 <div className="flex flex-wrap gap-2">
-                  {profileData.skills.map((skill, index) => (
-                    <Badge key={index} variant="secondary" className="px-3 py-1">
-                      {skill}
+                  {profileData.skills && profileData.skills.length > 0 ? (
+                    profileData.skills.map((skill, index) => (
+                      <Badge key={index} variant="secondary" className="px-3 py-1">
+                        {skill}
+                      </Badge>
+                    ))
+                  ) : (
+                    <Badge variant="outline" className="text-muted-foreground">
+                      No skills identified
                     </Badge>
-                  ))}
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -561,9 +601,15 @@ function App() {
                   </p>
                   <Separator />
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    {recommendations.map((recommendation) => (
-                      <RecommendationCard key={recommendation.id} recommendation={recommendation} />
-                    ))}
+                    {recommendations && recommendations.length > 0 ? (
+                      recommendations.map((recommendation) => (
+                        <RecommendationCard key={recommendation.id} recommendation={recommendation} />
+                      ))
+                    ) : (
+                      <div className="col-span-2 text-center text-muted-foreground py-8">
+                        No recommendations available. Try analyzing a profile first.
+                      </div>
+                    )}
                   </div>
                 </div>
               </TabsContent>
@@ -576,9 +622,15 @@ function App() {
                   </p>
                   <Separator />
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    {skillInsights.map((insight, index) => (
-                      <SkillInsightCard key={index} insight={insight} />
-                    ))}
+                    {skillInsights && skillInsights.length > 0 ? (
+                      skillInsights.map((insight, index) => (
+                        <SkillInsightCard key={index} insight={insight} />
+                      ))
+                    ) : (
+                      <div className="col-span-2 text-center text-muted-foreground py-8">
+                        No skill insights available. Try analyzing a profile first.
+                      </div>
+                    )}
                   </div>
                 </div>
               </TabsContent>
@@ -591,9 +643,15 @@ function App() {
                   </p>
                   <Separator />
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    {trendingTopics.map((trend, index) => (
-                      <TrendCard key={index} trend={trend} />
-                    ))}
+                    {trendingTopics && trendingTopics.length > 0 ? (
+                      trendingTopics.map((trend, index) => (
+                        <TrendCard key={index} trend={trend} />
+                      ))
+                    ) : (
+                      <div className="col-span-2 text-center text-muted-foreground py-8">
+                        No trending topics available. Try analyzing a profile first.
+                      </div>
+                    )}
                   </div>
                 </div>
               </TabsContent>
