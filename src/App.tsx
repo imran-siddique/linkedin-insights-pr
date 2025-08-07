@@ -20,7 +20,11 @@ import {
   Search,
   ExternalLink,
   Target,
-  Zap
+  Zap,
+  Brain,
+  Star,
+  BookOpen,
+  Trophy
 } from '@phosphor-icons/react'
 import { useKV } from '@github/spark/hooks'
 import { toast } from 'sonner'
@@ -34,15 +38,19 @@ interface ProfileData {
   engagement: number
   profileScore: number
   industry: string
+  skills: string[]
+  experience: number // years of experience
 }
 
 interface Recommendation {
   id: string
-  category: 'content' | 'networking' | 'optimization'
+  category: 'content' | 'networking' | 'optimization' | 'skills'
   title: string
   description: string
   priority: 'high' | 'medium' | 'low'
   action: string
+  relatedSkills?: string[]
+  impactScore: number
 }
 
 interface TrendingTopic {
@@ -50,6 +58,18 @@ interface TrendingTopic {
   relevanceScore: number
   hashtags: string[]
   suggestedAction: string
+  relatedSkills: string[]
+  marketDemand: 'high' | 'medium' | 'low'
+  difficulty: 'beginner' | 'intermediate' | 'advanced'
+}
+
+interface SkillInsight {
+  skill: string
+  marketDemand: 'high' | 'medium' | 'low'
+  growth: 'growing' | 'stable' | 'declining'
+  salary_impact: 'high' | 'medium' | 'low'
+  learning_resources: string[]
+  related_opportunities: string[]
 }
 
 function App() {
@@ -58,6 +78,7 @@ function App() {
   const [profileData, setProfileData] = useKV<ProfileData | null>('profile-data', null)
   const [recommendations, setRecommendations] = useKV<Recommendation[]>('recommendations', [])
   const [trendingTopics, setTrendingTopics] = useKV<TrendingTopic[]>('trending-topics', [])
+  const [skillInsights, setSkillInsights] = useKV<SkillInsight[]>('skill-insights', [])
   const [error, setError] = useState('')
 
   const extractLinkedInId = (url: string) => {
@@ -101,13 +122,21 @@ function App() {
         posts: Math.floor(Math.random() * 100) + 20,
         engagement: Math.floor(Math.random() * 8) + 2,
         profileScore: Math.floor(Math.random() * 30) + 70,
-        industry: 'Technology'
+        industry: 'Technology',
+        skills: ['JavaScript', 'React', 'Node.js', 'Python', 'AWS', 'Docker', 'Machine Learning', 'Data Analysis'],
+        experience: Math.floor(Math.random() * 10) + 2
       }
 
       setProfileData(mockProfileData)
 
-      // Generate AI recommendations
-      const prompt = spark.llmPrompt`Based on this LinkedIn profile data: ${JSON.stringify(mockProfileData)}, generate 6 specific, actionable recommendations for improving their LinkedIn presence and professional growth. Format as JSON array with fields: category (content/networking/optimization), title, description, priority (high/medium/low), action.`
+      // Generate AI recommendations based on skills and profile
+      const prompt = spark.llmPrompt`Based on this LinkedIn profile data: ${JSON.stringify(mockProfileData)}, generate 8 specific, actionable recommendations for improving their LinkedIn presence and professional growth. Focus heavily on their skills: ${mockProfileData.skills.join(', ')}. For each recommendation, consider:
+      - Current market trends for their skills
+      - Opportunities to showcase expertise
+      - Skills to develop or highlight
+      - Ways to position themselves in the market
+
+      Format as JSON array with fields: category (content/networking/optimization/skills), title, description, priority (high/medium/low), action, relatedSkills (array of relevant skills), impactScore (1-10).`
       
       const recommendationsResponse = await spark.llm(prompt, 'gpt-4o-mini', true)
       const generatedRecommendations = JSON.parse(recommendationsResponse).map((rec: any, index: number) => ({
@@ -117,13 +146,34 @@ function App() {
 
       setRecommendations(generatedRecommendations)
 
-      // Generate trending topics
-      const trendPrompt = spark.llmPrompt`For someone in the ${mockProfileData.industry} industry with the headline "${mockProfileData.headline}", identify 5 current trending topics they should engage with on LinkedIn. Format as JSON array with fields: topic, relevanceScore (1-10), hashtags (array), suggestedAction.`
+      // Generate skill-aware trending topics
+      const trendPrompt = spark.llmPrompt`For someone in the ${mockProfileData.industry} industry with these skills: ${mockProfileData.skills.join(', ')}, identify 6 current trending topics they should engage with on LinkedIn. Consider:
+      - Emerging technologies related to their skills
+      - Industry shifts affecting their expertise
+      - New applications of their existing skills
+      - Complementary skills they should develop
+      
+      Format as JSON array with fields: topic, relevanceScore (1-10), hashtags (array), suggestedAction, relatedSkills (array), marketDemand (high/medium/low), difficulty (beginner/intermediate/advanced).`
       
       const trendsResponse = await spark.llm(trendPrompt, 'gpt-4o-mini', true)
       const generatedTrends = JSON.parse(trendsResponse)
 
       setTrendingTopics(generatedTrends)
+
+      // Generate skill insights
+      const skillPrompt = spark.llmPrompt`Analyze these skills for market opportunities: ${mockProfileData.skills.join(', ')}. For each skill, provide insights on:
+      - Current market demand
+      - Growth trajectory (growing/stable/declining)
+      - Salary impact potential
+      - Learning resources to advance
+      - Related opportunities in the market
+      
+      Format as JSON array with fields: skill, marketDemand (high/medium/low), growth (growing/stable/declining), salary_impact (high/medium/low), learning_resources (array), related_opportunities (array).`
+      
+      const skillResponse = await spark.llm(skillPrompt, 'gpt-4o-mini', true)
+      const generatedSkillInsights = JSON.parse(skillResponse)
+
+      setSkillInsights(generatedSkillInsights)
 
       toast.success('Profile analyzed successfully!')
     } catch (error) {
@@ -178,11 +228,31 @@ function App() {
             <Badge variant="outline">
               {recommendation.category}
             </Badge>
+            {recommendation.impactScore && (
+              <Badge variant="secondary" className="bg-green-100 text-green-800">
+                Impact: {recommendation.impactScore}/10
+              </Badge>
+            )}
           </div>
         </div>
       </CardHeader>
       <CardContent>
         <p className="text-muted-foreground mb-3">{recommendation.description}</p>
+        
+        {recommendation.relatedSkills && recommendation.relatedSkills.length > 0 && (
+          <div className="mb-3">
+            <p className="text-sm font-medium mb-2">Related Skills:</p>
+            <div className="flex flex-wrap gap-2">
+              {recommendation.relatedSkills.map((skill, index) => (
+                <Badge key={index} variant="outline" className="text-xs">
+                  <Brain className="h-3 w-3 mr-1" />
+                  {skill}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        )}
+        
         <Button variant="outline" size="sm">
           {recommendation.action}
         </Button>
@@ -190,7 +260,68 @@ function App() {
     </Card>
   )
 
-  const TrendCard = ({ trend }: { trend: TrendingTopic }) => (
+  const SkillInsightCard = ({ insight }: { insight: SkillInsight }) => (
+    <Card className="mb-4">
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-lg flex items-center">
+            <Brain className="h-5 w-5 mr-2" />
+            {insight.skill}
+          </CardTitle>
+          <div className="flex items-center space-x-2">
+            <Badge variant={insight.marketDemand === 'high' ? 'default' : 'secondary'}>
+              {insight.marketDemand} demand
+            </Badge>
+            <Badge variant={insight.growth === 'growing' ? 'default' : 'outline'} className={
+              insight.growth === 'growing' ? 'bg-green-100 text-green-800' :
+              insight.growth === 'stable' ? 'bg-blue-100 text-blue-800' :
+              'bg-red-100 text-red-800'
+            }>
+              {insight.growth}
+            </Badge>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium">Salary Impact:</span>
+            <Badge variant="outline" className={
+              insight.salary_impact === 'high' ? 'bg-green-50 text-green-700' :
+              insight.salary_impact === 'medium' ? 'bg-yellow-50 text-yellow-700' :
+              'bg-gray-50 text-gray-700'
+            }>
+              {insight.salary_impact}
+            </Badge>
+          </div>
+          
+          <div>
+            <p className="text-sm font-medium mb-2">Learning Resources:</p>
+            <div className="space-y-1">
+              {insight.learning_resources.slice(0, 3).map((resource, index) => (
+                <div key={index} className="flex items-center text-sm text-muted-foreground">
+                  <BookOpen className="h-4 w-4 mr-2" />
+                  {resource}
+                </div>
+              ))}
+            </div>
+          </div>
+          
+          <div>
+            <p className="text-sm font-medium mb-2">Related Opportunities:</p>
+            <div className="space-y-1">
+              {insight.related_opportunities.slice(0, 2).map((opportunity, index) => (
+                <div key={index} className="flex items-center text-sm text-muted-foreground">
+                  <Star className="h-4 w-4 mr-2" />
+                  {opportunity}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
     <Card className="mb-4">
       <CardHeader>
         <div className="flex items-center justify-between">
@@ -198,13 +329,42 @@ function App() {
             <Hash className="h-5 w-5 mr-2" />
             {trend.topic}
           </CardTitle>
-          <Badge variant="secondary">
-            {trend.relevanceScore}/10
-          </Badge>
+          <div className="flex items-center space-x-2">
+            <Badge variant="secondary">
+              {trend.relevanceScore}/10
+            </Badge>
+            <Badge variant={trend.marketDemand === 'high' ? 'default' : 'outline'}>
+              {trend.marketDemand} demand
+            </Badge>
+          </div>
         </div>
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium">Difficulty:</span>
+            <Badge variant="outline" className={
+              trend.difficulty === 'beginner' ? 'bg-green-50 text-green-700' :
+              trend.difficulty === 'intermediate' ? 'bg-yellow-50 text-yellow-700' :
+              'bg-red-50 text-red-700'
+            }>
+              {trend.difficulty}
+            </Badge>
+          </div>
+          
+          {trend.relatedSkills && trend.relatedSkills.length > 0 && (
+            <div>
+              <p className="text-sm font-medium mb-2">Relevant Skills:</p>
+              <div className="flex flex-wrap gap-1">
+                {trend.relatedSkills.map((skill, index) => (
+                  <Badge key={index} variant="outline" className="text-xs">
+                    {skill}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          )}
+          
           <div className="flex flex-wrap gap-2">
             {trend.hashtags.map((hashtag, index) => (
               <Badge key={index} variant="outline" className="text-xs">
@@ -212,6 +372,7 @@ function App() {
               </Badge>
             ))}
           </div>
+          
           <p className="text-sm text-muted-foreground">{trend.suggestedAction}</p>
           <Button variant="outline" size="sm">
             <ExternalLink className="h-4 w-4 mr-2" />
@@ -325,6 +486,28 @@ function App() {
               />
             </div>
 
+            {/* Skills Overview */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Brain className="h-6 w-6 mr-2" />
+                  Your Skills Portfolio
+                </CardTitle>
+                <CardDescription>
+                  Core skills identified from your profile
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-wrap gap-2">
+                  {profileData.skills.map((skill, index) => (
+                    <Badge key={index} variant="secondary" className="px-3 py-1">
+                      {skill}
+                    </Badge>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
             <Card>
               <CardHeader>
                 <CardTitle>Profile Optimization Score</CardTitle>
@@ -349,18 +532,22 @@ function App() {
             </Card>
 
             <Tabs defaultValue="recommendations" className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="recommendations">
                   <Lightbulb className="h-4 w-4 mr-2" />
                   Recommendations
                 </TabsTrigger>
+                <TabsTrigger value="skills">
+                  <Brain className="h-4 w-4 mr-2" />
+                  Skill Insights
+                </TabsTrigger>
                 <TabsTrigger value="trends">
                   <TrendingUp className="h-4 w-4 mr-2" />
-                  Industry Trends
+                  Trends
                 </TabsTrigger>
                 <TabsTrigger value="strategy">
                   <Target className="h-4 w-4 mr-2" />
-                  Content Strategy
+                  Strategy
                 </TabsTrigger>
               </TabsList>
 
@@ -368,7 +555,7 @@ function App() {
                 <div className="space-y-4">
                   <h3 className="text-2xl font-semibold">AI-Powered Growth Recommendations</h3>
                   <p className="text-muted-foreground">
-                    Personalized suggestions to enhance your LinkedIn presence and professional impact.
+                    Personalized suggestions based on your skills and market opportunities.
                   </p>
                   <Separator />
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -379,11 +566,26 @@ function App() {
                 </div>
               </TabsContent>
 
+              <TabsContent value="skills" className="mt-6">
+                <div className="space-y-4">
+                  <h3 className="text-2xl font-semibold">Skill Market Analysis</h3>
+                  <p className="text-muted-foreground">
+                    Deep insights into your skills' market value and growth opportunities.
+                  </p>
+                  <Separator />
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    {skillInsights.map((insight, index) => (
+                      <SkillInsightCard key={index} insight={insight} />
+                    ))}
+                  </div>
+                </div>
+              </TabsContent>
+
               <TabsContent value="trends" className="mt-6">
                 <div className="space-y-4">
-                  <h3 className="text-2xl font-semibold">Industry Trends & Topics</h3>
+                  <h3 className="text-2xl font-semibold">Skill-Relevant Industry Trends</h3>
                   <p className="text-muted-foreground">
-                    Current trending topics in your industry that you should engage with to stay relevant.
+                    Trending topics specifically aligned with your skill set and expertise.
                   </p>
                   <Separator />
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -396,9 +598,9 @@ function App() {
 
               <TabsContent value="strategy" className="mt-6">
                 <div className="space-y-6">
-                  <h3 className="text-2xl font-semibold">Content Strategy Advisor</h3>
+                  <h3 className="text-2xl font-semibold">Skill-Based Content Strategy</h3>
                   <p className="text-muted-foreground">
-                    Data-driven insights for optimal content timing and engagement strategies.
+                    Strategic content recommendations based on your expertise and market positioning.
                   </p>
                   <Separator />
                   
@@ -430,21 +632,71 @@ function App() {
 
                     <Card>
                       <CardHeader>
-                        <CardTitle>Content Performance Insights</CardTitle>
+                        <CardTitle className="flex items-center">
+                          <Trophy className="h-5 w-5 mr-2" />
+                          Skill Showcase Opportunities
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-4">
+                        <div className="space-y-3">
+                          <div className="border-l-4 border-primary pl-3">
+                            <p className="text-sm font-medium">Share Project Deep-Dives</p>
+                            <p className="text-xs text-muted-foreground">Showcase technical expertise with detailed case studies</p>
+                          </div>
+                          <div className="border-l-4 border-accent pl-3">
+                            <p className="text-sm font-medium">Industry Commentary</p>
+                            <p className="text-xs text-muted-foreground">Position yourself as a thought leader in your field</p>
+                          </div>
+                          <div className="border-l-4 border-secondary pl-3">
+                            <p className="text-sm font-medium">Learning Journey Posts</p>
+                            <p className="text-xs text-muted-foreground">Document skill development and continuous learning</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardHeader>
+                        <CardTitle>Content Performance by Skill</CardTitle>
                       </CardHeader>
                       <CardContent className="space-y-4">
                         <div className="space-y-2">
                           <div className="flex justify-between">
-                            <span className="text-sm">Industry Updates</span>
+                            <span className="text-sm">Technical Tutorials</span>
                             <span className="text-sm font-medium">High engagement</span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-sm">Career Tips</span>
+                            <span className="text-sm">Career Insights</span>
                             <span className="text-sm font-medium">Medium engagement</span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-sm">Personal Stories</span>
+                            <span className="text-sm">Tool Reviews</span>
                             <span className="text-sm font-medium">High engagement</span>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center">
+                          <Brain className="h-5 w-5 mr-2" />
+                          Skill Monetization Ideas
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm">Consulting Services</span>
+                            <Badge variant="outline">High potential</Badge>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm">Online Course Creation</span>
+                            <Badge variant="outline">Medium potential</Badge>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm">Speaking Engagements</span>
+                            <Badge variant="outline">High potential</Badge>
                           </div>
                         </div>
                       </CardContent>
