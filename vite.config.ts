@@ -1,5 +1,5 @@
 import tailwindcss from "@tailwindcss/vite";
-import react from "@vitejs/plugin-react-swc";
+import react from "@vitejs/plugin-react";
 import { defineConfig, PluginOption } from "vite";
 
 import sparkPlugin from "@github/spark/spark-vite-plugin";
@@ -22,4 +22,15 @@ export default defineConfig({
       '@': resolve(projectRoot, 'src')
     }
   },
+  optimizeDeps: {
+    exclude: ['@github/spark']
+  },
+  build: {
+    rollupOptions: {
+      external: (id) => {
+        // Don't try to bundle spark runtime dependencies
+        return id.includes('@github/spark')
+      }
+    }
+  }
 });

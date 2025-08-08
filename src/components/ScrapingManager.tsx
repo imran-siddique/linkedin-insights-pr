@@ -192,9 +192,9 @@ export function ScrapingManager({
               <Badge variant={isActive ? 'default' : 'outline'}>
                 {isActive ? 'Active' : 'Idle'}
               </Badge>
-              {lastScrapingResult && (
-                <Badge variant={lastScrapingResult.success ? 'default' : 'destructive'}>
-                  {lastScrapingResult.source}
+              {lastResult && (
+                <Badge variant={lastResult.success ? 'default' : 'destructive'}>
+                  {lastResult.source}
                 </Badge>
               )}
             </div>
