@@ -37,7 +37,6 @@ src/lib/errorHandling.ts
 src/lib/linkedin-api.ts
 src/lib/linkedin-scraper.ts
 src/lib/monitoring.ts
-src/lib/optimization.ts
 src/lib/security.ts
 src/main.tsx
 src/types/linkedin.ts
