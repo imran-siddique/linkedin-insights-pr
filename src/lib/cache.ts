@@ -186,7 +186,6 @@ class CacheManager<T = any> {
 // Global cache instances
 export const profileCache = new CacheManager(50, CONFIG.CACHE_TTL)
 export const analysisCache = new CacheManager(100, CONFIG.CACHE_TTL * 2) // Longer TTL for analysis results
-export const scrapingCache = new CacheManager(25, CONFIG.CACHE_TTL / 2) // Shorter TTL for scraping results
 
 /**
  * Cache utilities
@@ -205,8 +204,7 @@ export const cacheUtils = {
   cleanupAll(): { profile: number; analysis: number; scraping: number } {
     return {
       profile: profileCache.cleanup(),
-      analysis: analysisCache.cleanup(),
-      scraping: scrapingCache.cleanup()
+      analysis: analysisCache.cleanup()
     }
   },
 
@@ -220,8 +218,7 @@ export const cacheUtils = {
   } {
     return {
       profile: profileCache.getStats(),
-      analysis: analysisCache.getStats(),
-      scraping: scrapingCache.getStats()
+      analysis: analysisCache.getStats()
     }
   },
 
@@ -231,7 +228,6 @@ export const cacheUtils = {
   clearAll(): void {
     profileCache.clear()
     analysisCache.clear()
-    scrapingCache.clear()
   },
 
   /**
