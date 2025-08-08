@@ -8,14 +8,11 @@
 .gitignore
 .spark-initial-sha
 .spark-workbench-id
-CLEANUP_REPORT.md
 DEPLOYMENT.md
 DEPLOYMENT_CHECKLIST.md
-ERROR_RESOLUTION.md
 PRD.md
 PRODUCTION_IMPROVEMENTS.md
 README.md
-build-test.sh
 deploy-aws.sh
 deploy-docker.sh
 deploy.sh
