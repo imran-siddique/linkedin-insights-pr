@@ -1,4 +1,5 @@
 import { ProfileData, ScrapingResult, RateLimitConfig, ScrapingSession } from '../types/linkedin'
+import { CONFIG } from './config'
 
 /**
  * LinkedIn Real-time Data Scraper with Rate Limiting
@@ -90,7 +91,9 @@ export class LinkedInScraper {
           }
         } catch (error) {
           lastError = error as Error
-          console.warn(`Scraping strategy failed: ${error}`)
+          if (CONFIG.ENABLE_DEBUG_MODE) {
+            console.warn(`Scraping strategy failed: ${error}`)
+          }
           await this.handleError(error as Error, session)
         }
       }
@@ -885,7 +888,9 @@ export class LinkedInScraper {
     const backoffTime = Math.min(1000 * Math.pow(2, session.attempts), 30000)
     
     if (session.attempts < 3) {
-      console.warn(`Scraping attempt ${session.attempts} failed, retrying in ${backoffTime}ms`)
+      if (CONFIG.ENABLE_DEBUG_MODE) {
+        console.warn(`Scraping attempt ${session.attempts} failed, retrying in ${backoffTime}ms`)
+      }
       await new Promise(resolve => setTimeout(resolve, backoffTime))
     }
   }
@@ -959,7 +964,9 @@ class RateLimiter {
     const maxDelay = Math.max(...delays)
     
     if (maxDelay > 0) {
-      console.log(`Rate limit reached, waiting ${maxDelay}ms`)
+      if (CONFIG.ENABLE_DEBUG_MODE) {
+        console.log(`Rate limit reached, waiting ${maxDelay}ms`)
+      }
       await new Promise(resolve => setTimeout(resolve, maxDelay))
     }
     

@@ -1,5 +1,6 @@
 import { ProfileData, CompetitiveProfile, CompetitiveAnalysis, CompensationAnalysis, ScrapingResult } from '../types/linkedin'
 import { linkedInScraper } from './linkedin-scraper'
+import { CONFIG } from './config'
 
 // LinkedIn API configuration
 const LINKEDIN_API_BASE = 'https://api.linkedin.com/v2'
@@ -103,16 +104,22 @@ export class LinkedInService {
       const scrapingResult: ScrapingResult = await linkedInScraper.scrapeProfile(username)
       
       if (scrapingResult.success && scrapingResult.data) {
-        console.log(`Profile data obtained via ${scrapingResult.source} with ${scrapingResult.confidence ? Math.round(scrapingResult.confidence * 100) : 'unknown'}% confidence`)
+        if (CONFIG.ENABLE_DEBUG_MODE) {
+          console.log(`Profile data obtained via ${scrapingResult.source} with ${scrapingResult.confidence ? Math.round(scrapingResult.confidence * 100) : 'unknown'}% confidence`)
+        }
         return scrapingResult.data
       }
       
       // Fallback: If scraping fails, use AI-powered analysis
-      console.warn('Real-time scraping failed, falling back to AI analysis')
+      if (CONFIG.ENABLE_DEBUG_MODE) {
+        console.warn('Real-time scraping failed, falling back to AI analysis')
+      }
       return await this.getProfileDataViaAI(username)
       
     } catch (error) {
-      console.error('All profile data methods failed:', error)
+      if (CONFIG.ENABLE_DEBUG_MODE) {
+        console.error('All profile data methods failed:', error)
+      }
       
       // Last resort: Generate basic profile data
       return this.generateFallbackProfileData(username)
@@ -197,7 +204,9 @@ export class LinkedInService {
       }
 
     } catch (parseError) {
-      console.error('Failed to parse AI-generated profile data:', parseError)
+      if (CONFIG.ENABLE_DEBUG_MODE) {
+        console.error('Failed to parse AI-generated profile data:', parseError)
+      }
       return this.generateFallbackProfileData(username)
     }
   }
@@ -334,7 +343,9 @@ export class LinkedInService {
       const response = await spark.llm(prompt, 'gpt-4o-mini', true)
       return JSON.parse(response)
     } catch (error) {
-      console.error('Error generating profile insights:', error)
+      if (CONFIG.ENABLE_DEBUG_MODE) {
+        console.error('Error generating profile insights:', error)
+      }
       return {
         strengths: ['Active professional presence'],
         improvements: ['Enhance profile completeness'],
@@ -465,7 +476,9 @@ export class LinkedInService {
           }))
         : []
     } catch (error) {
-      console.error('Error generating competitive profiles:', error)
+      if (CONFIG.ENABLE_DEBUG_MODE) {
+        console.error('Error generating competitive profiles:', error)
+      }
       return []
     }
   }
@@ -588,7 +601,9 @@ export class LinkedInService {
 
       return compensationAnalysis
     } catch (error) {
-      console.error('Error generating compensation analysis:', error)
+      if (CONFIG.ENABLE_DEBUG_MODE) {
+        console.error('Error generating compensation analysis:', error)
+      }
       // Return a fallback compensation analysis
       return {
         userProfile: {
@@ -766,7 +781,9 @@ export class LinkedInService {
       }
 
     } catch (error) {
-      console.error('Error performing competitive analysis:', error)
+      if (CONFIG.ENABLE_DEBUG_MODE) {
+        console.error('Error performing competitive analysis:', error)
+      }
       throw new Error('Failed to generate competitive analysis')
     }
   }
