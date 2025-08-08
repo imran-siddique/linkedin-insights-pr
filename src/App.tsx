@@ -75,10 +75,11 @@ import {
   Activity,
   Clock
 } from '@phosphor-icons/react'
-import { useKV } from '../hooks/useKV'
+import { useKV } from '@/hooks/useKV'
 import { toast } from 'sonner'
 import { Toaster } from '@/components/ui/sonner'
 import { linkedInService } from '@/lib/linkedin-api'
+import { skillsAnalysisService } from '@/lib/skills-analysis'
 import ScrapingManager from '@/components/ScrapingManager'
 import { ErrorFallback } from '@/ErrorFallback'
 import { CONFIG } from '@/lib/config'
@@ -96,7 +97,8 @@ import {
   VisualBrandingAnalysis,
   CompetitiveAnalysis,
   CompensationAnalysis,
-  ScrapingResult
+  ScrapingResult,
+  SkillAnalysis
 } from '@/types/linkedin'
 
 function App() {
@@ -111,6 +113,7 @@ function App() {
   const [visualBranding, setVisualBranding] = useKV<VisualBrandingAnalysis | null>('visual-branding', null)
   const [competitiveAnalysis, setCompetitiveAnalysis] = useKV<CompetitiveAnalysis | null>('competitive-analysis', null)
   const [compensationAnalysis, setCompensationAnalysis] = useKV<CompensationAnalysis | null>('compensation-analysis', null)
+  const [skillsAnalysis, setSkillsAnalysis] = useKV<SkillAnalysis | null>('skills-analysis', null)
   const [lastAnalysisTime, setLastAnalysisTime] = useKV<number | null>('last-analysis-time', null)
   const [error, setError] = useState('')
   const [analysisStage, setAnalysisStage] = useState('')
@@ -388,7 +391,14 @@ function App() {
           setAnalysisStage('Analyzing salary benchmarks and compensation...')
           const compensationData = await linkedInService.generateCompensationAnalysis(profileData)
           setCompensationAnalysis(compensationData)
-        }, 'Compensation Analysis')
+        }, 'Compensation Analysis'),
+
+        // Stage 9: Perform comprehensive skills analysis
+        safeAsync(async () => {
+          setAnalysisStage('Conducting comprehensive skills analysis...')
+          const skillsData = await skillsAnalysisService.analyzeSkills(profileData)
+          setSkillsAnalysis(skillsData)
+        }, 'Skills Analysis')
       ])
 
       // Cache the complete analysis results
@@ -433,7 +443,8 @@ function App() {
             stage.includes('visual') ? 90 :
             stage.includes('competitive') ? 95 :
             stage.includes('landscape') ? 95 :
-            stage.includes('salary benchmarks') ? 100 : 5
+            stage.includes('salary benchmarks') ? 98 :
+            stage.includes('skills analysis') ? 100 : 5
           } className="w-full" />
         </div>
       </CardContent>
@@ -1305,6 +1316,269 @@ function App() {
     )
   }
 
+  // Skills Analysis Components
+  const SkillsAnalysisOverview = () => {
+    if (!skillsAnalysis) return null
+
+    return (
+      <div className="space-y-6">
+        {/* Overall Skills Score */}
+        <Card className="border-l-4 border-l-primary">
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <div className="flex items-center">
+                <Brain className="h-5 w-5 mr-2" />
+                Skills Portfolio Score
+              </div>
+              <div className="text-3xl font-bold text-primary">{skillsAnalysis.overallScore}/10</div>
+            </CardTitle>
+            <CardDescription>
+              Comprehensive evaluation of your skill portfolio's market value and competitiveness
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Progress value={skillsAnalysis.overallScore * 10} className="w-full mb-4" />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="text-center space-y-2">
+                <div className="text-2xl font-bold text-accent">{skillsAnalysis.marketAlignment.alignmentScore}/10</div>
+                <p className="text-sm text-muted-foreground">Market Alignment</p>
+              </div>
+              <div className="text-center space-y-2">
+                <div className="text-2xl font-bold text-green-600">{skillsAnalysis.competitiveAdvantage.competitiveScore}/10</div>
+                <p className="text-sm text-muted-foreground">Competitive Edge</p>
+              </div>
+              <div className="text-center space-y-2">
+                <div className="text-2xl font-bold text-blue-600">{skillsAnalysis.competitiveAdvantage.rarityScore}/10</div>
+                <p className="text-sm text-muted-foreground">Skill Rarity</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Skill Categories */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {skillsAnalysis.categoryBreakdown.slice(0, 4).map((category, index) => (
+            <Card key={index}>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center text-lg">
+                    <div className="text-2xl mr-2">{category.icon}</div>
+                    {category.category}
+                  </CardTitle>
+                  <div className="flex items-center space-x-2">
+                    <Badge variant={category.marketDemand === 'very-high' || category.marketDemand === 'high' ? 'default' : 'secondary'}>
+                      {category.marketDemand} demand
+                    </Badge>
+                    <div className="text-lg font-bold">{category.categoryScore}/10</div>
+                  </div>
+                </div>
+                <CardDescription className="text-sm">{category.description}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <Progress value={category.categoryScore * 10} className="w-full mb-3" />
+                  <div className="flex flex-wrap gap-2">
+                    {category.skills.slice(0, 5).map((skill, skillIndex) => (
+                      <Badge key={skillIndex} variant="outline" className="text-xs flex items-center">
+                        <span className={`w-2 h-2 rounded-full mr-1 ${
+                          skill.marketValue >= 8 ? 'bg-green-500' :
+                          skill.marketValue >= 6 ? 'bg-yellow-500' : 'bg-gray-400'
+                        }`}></span>
+                        {skill.name}
+                      </Badge>
+                    ))}
+                    {category.skills.length > 5 && (
+                      <Badge variant="secondary" className="text-xs">
+                        +{category.skills.length - 5} more
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  const SkillGapsAnalysis = () => {
+    if (!skillsAnalysis?.skillGaps) return null
+
+    return (
+      <div className="space-y-4">
+        {skillsAnalysis.skillGaps.map((gap, index) => (
+          <Card key={index} className={`border-l-4 ${
+            gap.priority === 'critical' ? 'border-l-red-500' :
+            gap.priority === 'important' ? 'border-l-yellow-500' :
+            gap.priority === 'beneficial' ? 'border-l-blue-500' : 'border-l-gray-400'
+          }`}>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg capitalize">{gap.category} Skills</CardTitle>
+                <div className="flex items-center space-x-2">
+                  <Badge variant={
+                    gap.priority === 'critical' ? 'destructive' :
+                    gap.priority === 'important' ? 'default' : 'secondary'
+                  }>
+                    {gap.priority}
+                  </Badge>
+                  <Badge variant="outline">{gap.timeToAcquire}</Badge>
+                  <Badge variant="outline" className={`${
+                    gap.cost === 'free' ? 'bg-green-50 text-green-700' :
+                    gap.cost === 'low' ? 'bg-blue-50 text-blue-700' :
+                    gap.cost === 'medium' ? 'bg-yellow-50 text-yellow-700' : 'bg-red-50 text-red-700'
+                  }`}>
+                    {gap.cost} cost
+                  </Badge>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <p className="text-sm text-muted-foreground">{gap.impact}</p>
+                
+                <div>
+                  <p className="text-sm font-medium mb-2">Missing Skills:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {gap.missingSkills.map((skill, skillIndex) => (
+                      <Badge key={skillIndex} variant="outline" className="text-xs">
+                        {skill}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <Trophy className="h-4 w-4 text-yellow-500" />
+                    <span className="text-sm font-medium">ROI Score:</span>
+                    <Badge variant="outline" className="bg-yellow-50 text-yellow-700">
+                      {gap.roi}/10
+                    </Badge>
+                  </div>
+                  <Button variant="outline" size="sm">
+                    View Learning Path
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    )
+  }
+
+  const LearningPathView = () => {
+    if (!skillsAnalysis?.learningPath) return null
+
+    const path = skillsAnalysis.learningPath
+
+    return (
+      <div className="space-y-6">
+        {/* Learning Path Overview */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <GraduationCap className="h-5 w-5 mr-2" />
+              Personalized Learning Path
+            </CardTitle>
+            <CardDescription>
+              A structured approach to advance your skills and career
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="text-center space-y-2">
+                <Clock className="h-6 w-6 mx-auto text-primary" />
+                <div className="font-semibold">{path.totalDuration}</div>
+                <p className="text-xs text-muted-foreground">Total Duration</p>
+              </div>
+              <div className="text-center space-y-2">
+                <CurrencyDollar className="h-6 w-6 mx-auto text-green-600" />
+                <div className="font-semibold">${path.estimatedCost.min}-${path.estimatedCost.max}</div>
+                <p className="text-xs text-muted-foreground">Investment Range</p>
+              </div>
+              <div className="text-center space-y-2">
+                <Gauge className="h-6 w-6 mx-auto text-blue-600" />
+                <div className="font-semibold capitalize">{path.difficulty}</div>
+                <p className="text-xs text-muted-foreground">Difficulty Level</p>
+              </div>
+              <div className="text-center space-y-2">
+                <Calendar className="h-6 w-6 mx-auto text-purple-600" />
+                <div className="font-semibold">{path.timeCommitment}</div>
+                <p className="text-xs text-muted-foreground">Time Commitment</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Learning Phases */}
+        <div className="space-y-4">
+          {path.phases.map((phase, index) => (
+            <Card key={index}>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center text-lg">
+                    <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold mr-3">
+                      {index + 1}
+                    </div>
+                    {phase.phase}
+                  </CardTitle>
+                  <Badge variant="outline">{phase.duration}</Badge>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-sm font-medium mb-2">Skills to Develop:</p>
+                    <div className="flex flex-wrap gap-2">
+                      {phase.skills.map((skill, skillIndex) => (
+                        <Badge key={skillIndex} variant="secondary" className="text-xs">
+                          {skill}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="text-sm font-medium mb-2">Key Resources:</p>
+                    <div className="space-y-2">
+                      {phase.resources.slice(0, 3).map((resource, resourceIndex) => (
+                        <div key={resourceIndex} className="flex items-center justify-between text-sm">
+                          <div className="flex items-center space-x-2">
+                            <BookOpen className="h-4 w-4 text-muted-foreground" />
+                            <span>{resource.title}</span>
+                            <Badge variant="outline" className="text-xs">{resource.type}</Badge>
+                          </div>
+                          <Badge variant={resource.cost === 'free' ? 'secondary' : 'outline'} className="text-xs">
+                            {resource.cost}
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="text-sm font-medium mb-2">Milestone Projects:</p>
+                    <div className="space-y-1">
+                      {phase.projects.slice(0, 2).map((project, projectIndex) => (
+                        <div key={projectIndex} className="flex items-center text-sm text-muted-foreground">
+                          <CheckCircle className="h-4 w-4 mr-2" />
+                          {project.title}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
   return (
     <ErrorBoundary
       FallbackComponent={ErrorFallback}
@@ -1746,10 +2020,14 @@ function App() {
             </div>
 
             <Tabs defaultValue="recommendations" className="w-full">
-              <TabsList className="grid w-full grid-cols-6">
+              <TabsList className="grid w-full grid-cols-7">
                 <TabsTrigger value="recommendations">
                   <Lightbulb className="h-4 w-4 mr-2" />
                   Recommendations
+                </TabsTrigger>
+                <TabsTrigger value="skills-analysis">
+                  <Brain className="h-4 w-4 mr-2" />
+                  Skills Analysis
                 </TabsTrigger>
                 <TabsTrigger value="skills">
                   <Brain className="h-4 w-4 mr-2" />
@@ -1791,6 +2069,185 @@ function App() {
                       </div>
                     )}
                   </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="skills-analysis" className="mt-6">
+                <div className="space-y-6">
+                  <div>
+                    <h3 className="text-2xl font-semibold">Comprehensive Skills Analysis</h3>
+                    <p className="text-muted-foreground">
+                      Deep dive into your skill portfolio with market insights, gap analysis, and personalized learning paths.
+                    </p>
+                  </div>
+                  
+                  {skillsAnalysis ? (
+                    <Tabs defaultValue="overview" className="w-full">
+                      <TabsList className="grid w-full grid-cols-4">
+                        <TabsTrigger value="overview">Portfolio Overview</TabsTrigger>
+                        <TabsTrigger value="gaps">Skill Gaps</TabsTrigger>
+                        <TabsTrigger value="learning">Learning Path</TabsTrigger>
+                        <TabsTrigger value="trends">Market Trends</TabsTrigger>
+                      </TabsList>
+                      
+                      <TabsContent value="overview" className="mt-4">
+                        <SkillsAnalysisOverview />
+                      </TabsContent>
+                      
+                      <TabsContent value="gaps" className="mt-4">
+                        <div className="space-y-4">
+                          <h4 className="text-xl font-semibold">Critical Skill Gaps Analysis</h4>
+                          <p className="text-muted-foreground">
+                            Identify missing skills that could accelerate your career growth and increase your market value.
+                          </p>
+                          <SkillGapsAnalysis />
+                        </div>
+                      </TabsContent>
+                      
+                      <TabsContent value="learning" className="mt-4">
+                        <div className="space-y-4">
+                          <h4 className="text-xl font-semibold">Personalized Learning Journey</h4>
+                          <p className="text-muted-foreground">
+                            A structured roadmap to develop the skills that matter most for your career advancement.
+                          </p>
+                          <LearningPathView />
+                        </div>
+                      </TabsContent>
+                      
+                      <TabsContent value="trends" className="mt-4">
+                        <div className="space-y-4">
+                          <h4 className="text-xl font-semibold">Skills Market Intelligence</h4>
+                          <p className="text-muted-foreground">
+                            Current and future trends for your skills, competitive advantages, and market positioning insights.
+                          </p>
+                          
+                          {skillsAnalysis.skillTrends && skillsAnalysis.skillTrends.length > 0 && (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                              {skillsAnalysis.skillTrends.slice(0, 6).map((trend, index) => (
+                                <Card key={index}>
+                                  <CardHeader>
+                                    <div className="flex items-center justify-between">
+                                      <CardTitle className="text-lg">{trend.skill}</CardTitle>
+                                      <div className="flex items-center space-x-2">
+                                        <Badge variant={
+                                          trend.trend === 'explosive' || trend.trend === 'growing' ? 'default' :
+                                          trend.trend === 'stable' ? 'secondary' : 'destructive'
+                                        }>
+                                          {trend.trend}
+                                        </Badge>
+                                        <Badge variant="outline">
+                                          {trend.trendScore > 0 ? '+' : ''}{trend.trendScore}
+                                        </Badge>
+                                      </div>
+                                    </div>
+                                  </CardHeader>
+                                  <CardContent>
+                                    <div className="space-y-3">
+                                      <div className="grid grid-cols-2 gap-4 text-sm">
+                                        <div>
+                                          <span className="text-muted-foreground">Job Growth:</span>
+                                          <div className="flex items-center">
+                                            {trend.jobPostingsGrowth >= 0 ? (
+                                              <ArrowUp className="h-3 w-3 text-green-500 mr-1" />
+                                            ) : (
+                                              <ArrowDown className="h-3 w-3 text-red-500 mr-1" />
+                                            )}
+                                            <span className={trend.jobPostingsGrowth >= 0 ? 'text-green-600' : 'text-red-600'}>
+                                              {Math.abs(trend.jobPostingsGrowth)}%
+                                            </span>
+                                          </div>
+                                        </div>
+                                        <div>
+                                          <span className="text-muted-foreground">Salary Trend:</span>
+                                          <div className="flex items-center">
+                                            {trend.salaryTrend >= 0 ? (
+                                              <ArrowUp className="h-3 w-3 text-green-500 mr-1" />
+                                            ) : (
+                                              <ArrowDown className="h-3 w-3 text-red-500 mr-1" />
+                                            )}
+                                            <span className={trend.salaryTrend >= 0 ? 'text-green-600' : 'text-red-600'}>
+                                              {Math.abs(trend.salaryTrend)}%
+                                            </span>
+                                          </div>
+                                        </div>
+                                      </div>
+                                      
+                                      {trend.geographic && trend.geographic.length > 0 && (
+                                        <div>
+                                          <p className="text-sm font-medium mb-2">Top Markets:</p>
+                                          <div className="flex flex-wrap gap-1">
+                                            {trend.geographic.slice(0, 3).map((geo, idx) => (
+                                              <Badge key={idx} variant="secondary" className="text-xs">
+                                                <MapPin className="h-3 w-3 mr-1" />
+                                                {geo.location}
+                                              </Badge>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </CardContent>
+                                </Card>
+                              ))}
+                            </div>
+                          )}
+                          
+                          {/* Competitive Advantage Summary */}
+                          <Card>
+                            <CardHeader>
+                              <CardTitle className="flex items-center">
+                                <Star className="h-5 w-5 mr-2" />
+                                Your Competitive Advantages
+                              </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                              <div className="space-y-4">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                  <div>
+                                    <p className="text-sm font-medium mb-2">Unique Skills:</p>
+                                    <div className="flex flex-wrap gap-2">
+                                      {skillsAnalysis.competitiveAdvantage.uniqueSkills.slice(0, 4).map((skill, idx) => (
+                                        <Badge key={idx} variant="default" className="text-xs">
+                                          <Crown className="h-3 w-3 mr-1" />
+                                          {skill}
+                                        </Badge>
+                                      ))}
+                                    </div>
+                                  </div>
+                                  <div>
+                                    <p className="text-sm font-medium mb-2">Power Combinations:</p>
+                                    <div className="flex flex-wrap gap-2">
+                                      {skillsAnalysis.competitiveAdvantage.skillCombinations.slice(0, 3).map((combo, idx) => (
+                                        <Badge key={idx} variant="secondary" className="text-xs">
+                                          {combo}
+                                        </Badge>
+                                      ))}
+                                    </div>
+                                  </div>
+                                </div>
+                                
+                                <div>
+                                  <p className="text-sm font-medium mb-2">Key Differentiators:</p>
+                                  <div className="space-y-1">
+                                    {skillsAnalysis.competitiveAdvantage.differentiators.slice(0, 3).map((diff, idx) => (
+                                      <div key={idx} className="flex items-start text-sm">
+                                        <CheckCircle className="h-4 w-4 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
+                                        {diff}
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        </div>
+                      </TabsContent>
+                    </Tabs>
+                  ) : (
+                    <div className="text-center text-muted-foreground py-8">
+                      No skills analysis available. Try analyzing a profile first.
+                    </div>
+                  )}
                 </div>
               </TabsContent>
 

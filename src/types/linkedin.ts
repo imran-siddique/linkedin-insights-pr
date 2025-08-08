@@ -66,6 +66,163 @@ export interface SkillInsight {
   averageSalaryIncrease?: string
 }
 
+// Enhanced Skills Analysis Types
+export interface SkillAnalysis {
+  overallScore: number
+  categoryBreakdown: SkillCategory[]
+  skillGaps: SkillGap[]
+  learningPath: LearningPath
+  marketAlignment: MarketAlignment
+  competitiveAdvantage: CompetitiveAdvantage
+  skillTrends: SkillTrend[]
+  certificationRecommendations: CertificationRecommendation[]
+}
+
+export interface SkillCategory {
+  category: string
+  skills: EnhancedSkill[]
+  categoryScore: number
+  marketDemand: 'very-high' | 'high' | 'medium' | 'low'
+  description: string
+  icon: string
+}
+
+export interface EnhancedSkill {
+  name: string
+  proficiencyLevel: 'novice' | 'beginner' | 'intermediate' | 'advanced' | 'expert'
+  marketValue: number // 1-10 scale
+  demandTrend: 'rising' | 'stable' | 'declining'
+  salaryImpact: number // percentage premium
+  learningDifficulty: 'easy' | 'moderate' | 'challenging' | 'difficult'
+  timeToMaster: string
+  relatedSkills: string[]
+  jobRoles: string[]
+  industryDemand: Array<{
+    industry: string
+    demand: number
+    avgSalary: number
+  }>
+  certifications: string[]
+  learningResources: LearningResource[]
+  projects: ProjectIdea[]
+  companies: string[]
+}
+
+export interface SkillGap {
+  category: string
+  missingSkills: string[]
+  priority: 'critical' | 'important' | 'beneficial' | 'nice-to-have'
+  impact: string
+  timeToAcquire: string
+  learningPath: string[]
+  cost: 'free' | 'low' | 'medium' | 'high'
+  roi: number // return on investment score
+}
+
+export interface LearningPath {
+  totalDuration: string
+  phases: LearningPhase[]
+  estimatedCost: {
+    min: number
+    max: number
+  }
+  timeCommitment: string
+  difficulty: 'beginner' | 'intermediate' | 'advanced'
+  prerequisites: string[]
+}
+
+export interface LearningPhase {
+  phase: string
+  duration: string
+  skills: string[]
+  resources: LearningResource[]
+  projects: ProjectIdea[]
+  milestones: string[]
+  assessments: string[]
+}
+
+export interface LearningResource {
+  type: 'course' | 'book' | 'video' | 'tutorial' | 'documentation' | 'practice'
+  title: string
+  provider: string
+  url?: string
+  rating?: number
+  cost: 'free' | 'paid'
+  duration: string
+  difficulty: 'beginner' | 'intermediate' | 'advanced'
+  tags: string[]
+}
+
+export interface ProjectIdea {
+  title: string
+  description: string
+  skillsUsed: string[]
+  difficulty: 'beginner' | 'intermediate' | 'advanced'
+  estimatedTime: string
+  portfolioValue: 'high' | 'medium' | 'low'
+  githubRepos?: string[]
+  learningOutcomes: string[]
+}
+
+export interface MarketAlignment {
+  alignmentScore: number // 1-10
+  industryFit: number // 1-10
+  futureFit: number // 1-10
+  recommendations: string[]
+  emergingSkillsToWatch: string[]
+  fadingSkills: string[]
+  hotSkillCombinations: Array<{
+    skills: string[]
+    demand: number
+    salary: number
+  }>
+}
+
+export interface CompetitiveAdvantage {
+  uniqueSkills: string[]
+  skillCombinations: string[]
+  rarityScore: number // 1-10
+  competitiveScore: number // 1-10
+  advantages: string[]
+  differentiators: string[]
+  niche: string
+}
+
+export interface SkillTrend {
+  skill: string
+  trend: 'explosive' | 'growing' | 'stable' | 'declining' | 'dying'
+  trendScore: number // -10 to +10
+  yearOverYearGrowth: number // percentage
+  jobPostingsGrowth: number
+  salaryTrend: number
+  geographic: Array<{
+    location: string
+    demand: number
+    salary: number
+  }>
+  timeline: Array<{
+    year: number
+    demand: number
+    jobs: number
+  }>
+}
+
+export interface CertificationRecommendation {
+  name: string
+  provider: string
+  skills: string[]
+  cost: number
+  duration: string
+  difficulty: 'beginner' | 'intermediate' | 'advanced'
+  industryRecognition: 'high' | 'medium' | 'low'
+  roi: number // return on investment score
+  prerequisites: string[]
+  maintenanceRequired: boolean
+  salaryImpact: number
+  jobRoles: string[]
+  url?: string
+}
+
 export interface ProfileInsights {
   strengths: string[]
   improvements: string[]
