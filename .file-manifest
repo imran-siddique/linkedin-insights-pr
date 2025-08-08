@@ -22,6 +22,7 @@ postcss.config.js
 src/App.tsx
 src/ErrorFallback.tsx
 src/components/ScrapingManager.tsx
+src/components/ui/sonner.tsx
 src/hooks/useLinkedInScraper.ts
 src/index.css
 src/lib/cache.ts
