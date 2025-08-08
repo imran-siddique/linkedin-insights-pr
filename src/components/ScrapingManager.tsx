@@ -261,30 +261,6 @@ export function ScrapingManager({
                   </div>
                 </AlertDescription>
               </Alert>
-            {/* Last Result Summary */}
-            {lastResult && (
-              <Alert className={lastResult.success ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}>
-                {lastResult.success ? (
-                  <CheckCircle className="h-4 w-4" />
-                ) : (
-                  <AlertCircle className="h-4 w-4" />
-                )}
-                <AlertDescription>
-                  <div className="flex items-center justify-between">
-                    <span>
-                      {lastResult.success 
-                        ? `Successfully scraped profile using ${lastResult.source}` 
-                        : `Scraping failed: ${lastResult.error}`
-                      }
-                    </span>
-                    {lastResult.confidence && (
-                      <Badge variant="outline" className="text-xs">
-                        {Math.round(lastResult.confidence * 100)}% confidence
-                      </Badge>
-                    )}
-                  </div>
-                </AlertDescription>
-              </Alert>
             )}
           </div>
         </CardContent>
