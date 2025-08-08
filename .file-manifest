@@ -7,6 +7,7 @@
 .gitignore
 .spark-initial-sha
 .spark-workbench-id
+CLEANUP_REPORT.md
 DEPLOYMENT_CHECKLIST.md
 ERROR_RESOLUTION.md
 PRD.md
@@ -18,10 +19,7 @@ package-lock.json
 package.json
 packages/spark-tools/package.json
 postcss.config.js
-src/App.minimal.tsx
-src/App.simple.tsx
 src/App.tsx
-src/App.working.tsx
 src/ErrorFallback.tsx
 src/components/ScrapingManager.tsx
 src/hooks/useLinkedInScraper.ts
@@ -34,7 +32,6 @@ src/lib/linkedin-scraper.ts
 src/lib/monitoring.ts
 src/lib/optimization.ts
 src/lib/security.ts
-src/main.simple.tsx
 src/main.tsx
 src/types/linkedin.ts
 start-dev.sh
