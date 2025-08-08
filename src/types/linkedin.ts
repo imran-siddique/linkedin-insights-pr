@@ -19,6 +19,9 @@ export interface ProfileData {
   verificationLevel?: 'basic' | 'standard' | 'premium'
   contentFrequency?: 'daily' | 'weekly' | 'monthly' | 'rarely'
   networkGrowthRate?: number
+  // Enhanced profiling fields
+  roleLevel?: 'individual' | 'manager' | 'director' | 'executive' | 'founder'
+  followerGrowthTrend?: 'increasing' | 'stable' | 'decreasing'
   // Real-time scraping metadata
   lastUpdated?: string
   scrapedAt?: number

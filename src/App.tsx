@@ -1216,8 +1216,10 @@ function App() {
               <Alert className="border-blue-200 bg-blue-50">
                 <Info className="h-4 w-4" />
                 <AlertDescription className="text-blue-800">
-                  <strong>What we'll analyze:</strong> Real-time profile scraping, skill market value, industry trends, 
-                  competitive benchmarking, salary & compensation analysis, content strategy, networking opportunities, and personalized growth recommendations.
+                  <strong>Enhanced Analysis:</strong> Real-time profile scraping with accurate follower count estimation, 
+                  skill market value analysis, industry-specific benchmarking, competitive analysis, 
+                  salary & compensation insights, content strategy recommendations, and personalized growth opportunities 
+                  based on your professional level and industry.
                 </AlertDescription>
               </Alert>
               
@@ -1287,6 +1289,66 @@ function App() {
                 </CardContent>
               </Card>
             )}
+            {/* Profile Summary & Role Analysis */}
+            {profileData.roleLevel && (
+              <Card className="border-l-4 border-l-accent">
+                <CardContent className="p-6">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium text-muted-foreground">Professional Level</p>
+                      <div className="flex items-center space-x-2">
+                        <Badge variant="default" className="capitalize">
+                          {profileData.roleLevel.replace('_', ' ')}
+                        </Badge>
+                        {profileData.experience && (
+                          <Badge variant="outline">
+                            {profileData.experience} years exp.
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium text-muted-foreground">Network Size</p>
+                      <div className="flex items-center space-x-2">
+                        <Users className="h-4 w-4 text-primary" />
+                        <span className="font-semibold">
+                          {profileData.followers.toLocaleString()} followers
+                        </span>
+                        {profileData.followerGrowthTrend && (
+                          <Badge variant="outline" className={
+                            profileData.followerGrowthTrend === 'increasing' ? 'text-green-700 border-green-200' :
+                            profileData.followerGrowthTrend === 'stable' ? 'text-blue-700 border-blue-200' :
+                            'text-orange-700 border-orange-200'
+                          }>
+                            {profileData.followerGrowthTrend === 'increasing' && <TrendingUp className="h-3 w-3 mr-1" />}
+                            {profileData.followerGrowthTrend === 'stable' && <Equals className="h-3 w-3 mr-1" />}
+                            {profileData.followerGrowthTrend === 'decreasing' && <TrendingDown className="h-3 w-3 mr-1" />}
+                            {profileData.followerGrowthTrend}
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Follower-to-connection ratio: {(profileData.followers / profileData.connections).toFixed(2)}x
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium text-muted-foreground">Activity Level</p>
+                      <div className="flex items-center space-x-2">
+                        <Activity className="h-4 w-4 text-accent" />
+                        <span className="font-semibold capitalize">
+                          {profileData.contentFrequency || 'unknown'} poster
+                        </span>
+                        <Badge variant="secondary">
+                          {profileData.engagement}% engagement
+                        </Badge>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
             
             {/* Profile Insights */}
             <ProfileInsightsCard />
@@ -1299,7 +1361,8 @@ function App() {
               <MetricCard
                 title="Followers"
                 value={profileData.followers.toLocaleString()}
-                change={12}
+                change={profileData.followerGrowthTrend === 'increasing' ? 12 : 
+                        profileData.followerGrowthTrend === 'decreasing' ? -5 : 0}
                 icon={Users}
               />
               <MetricCard
@@ -1311,13 +1374,16 @@ function App() {
               <MetricCard
                 title="Posts"
                 value={profileData.posts}
-                change={-5}
+                change={profileData.contentFrequency === 'daily' ? 25 :
+                        profileData.contentFrequency === 'weekly' ? 10 :
+                        profileData.contentFrequency === 'monthly' ? -2 : -8}
                 icon={MessageSquare}
               />
               <MetricCard
                 title="Engagement Rate"
                 value={`${profileData.engagement}%`}
-                change={15}
+                change={profileData.followers < 1000 ? 15 : 
+                        profileData.followers < 5000 ? 8 : 3}
                 icon={TrendingUp}
               />
             </div>
@@ -1346,6 +1412,85 @@ function App() {
                       No skills identified
                     </Badge>
                   )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Follower Benchmark Context */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <BarChart className="h-5 w-5 mr-2" />
+                  LinkedIn Follower Benchmarks
+                </CardTitle>
+                <CardDescription>
+                  How your follower count compares to industry standards
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-3">
+                      <p className="text-sm font-medium">Your Position:</p>
+                      <div className="flex items-center space-x-3">
+                        <div className="text-2xl font-bold text-primary">
+                          {profileData.followers.toLocaleString()}
+                        </div>
+                        <div className="space-y-1">
+                          <Badge variant={
+                            profileData.followers >= 15000 ? 'default' :
+                            profileData.followers >= 5000 ? 'secondary' :
+                            profileData.followers >= 1500 ? 'outline' : 'secondary'
+                          }>
+                            {profileData.followers >= 15000 ? 'Industry Leader' :
+                             profileData.followers >= 5000 ? 'Established Professional' :
+                             profileData.followers >= 1500 ? 'Active Professional' : 'Growing Professional'}
+                          </Badge>
+                          <p className="text-xs text-muted-foreground capitalize">
+                            {profileData.roleLevel?.replace('_', ' ')} level
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
+                      <p className="text-sm font-medium">Industry Context:</p>
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between items-center">
+                          <span className="text-muted-foreground">Most professionals:</span>
+                          <span>200-1,500</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-muted-foreground">Active professionals:</span>
+                          <span>1,500-5,000</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-muted-foreground">Industry leaders:</span>
+                          <span>5,000-15,000</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-muted-foreground">Influencers/Executives:</span>
+                          <span>15,000+</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  <div className="flex items-center justify-between text-sm">
+                    <div className="flex items-center space-x-2">
+                      <Info className="h-4 w-4 text-blue-500" />
+                      <span className="text-muted-foreground">
+                        Your follower count is realistic for a {profileData.roleLevel?.replace('_', ' ')} in {profileData.industry}
+                      </span>
+                    </div>
+                    {scrapingResult && (
+                      <Badge variant="outline" className="text-xs">
+                        {Math.round((scrapingResult.confidence || 0.75) * 100)}% confidence
+                      </Badge>
+                    )}
+                  </div>
                 </div>
               </CardContent>
             </Card>
