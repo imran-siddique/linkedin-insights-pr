@@ -16,7 +16,7 @@
     "setup:env": "cd backend && cp .env.example .env && cd ../frontend && cp .env.example .env"
   },
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "concurrently": "^9.2.0"
   },
   "keywords": [
     "linkedin",
