@@ -11,10 +11,12 @@ DEPLOYMENT_CHECKLIST.md
 PRD.md
 PRODUCTION_IMPROVEMENTS.md
 README.md
+build-test.sh
 index.html
 package-lock.json
 package.json
 packages/spark-tools/package.json
+postcss.config.js
 src/App.tsx
 src/ErrorFallback.tsx
 src/components/ScrapingManager.tsx
@@ -31,5 +33,6 @@ src/lib/security.ts
 src/main.tsx
 src/types/linkedin.ts
 start-dev.sh
+tailwind.config.js
 vite-env.d.ts
 vite.config.ts
