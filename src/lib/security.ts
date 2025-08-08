@@ -230,12 +230,12 @@ export const performance = {
    * Measure execution time of a function
    */
   measureTime<T>(name: string, fn: () => T): T {
-    const start = performance.now()
+    const start = Date.now()
     const result = fn()
-    const end = performance.now()
+    const end = Date.now()
     
     if (CONFIG.ENABLE_DEBUG_MODE) {
-      console.log(`⏱️ ${name}: ${(end - start).toFixed(2)}ms`)
+      console.log(`⏱️ ${name}: ${(end - start)}ms`)
     }
     
     return result
@@ -245,12 +245,12 @@ export const performance = {
    * Measure execution time of an async function
    */
   async measureTimeAsync<T>(name: string, fn: () => Promise<T>): Promise<T> {
-    const start = performance.now()
+    const start = Date.now()
     const result = await fn()
-    const end = performance.now()
+    const end = Date.now()
     
     if (CONFIG.ENABLE_DEBUG_MODE) {
-      console.log(`⏱️ ${name}: ${(end - start).toFixed(2)}ms`)
+      console.log(`⏱️ ${name}: ${(end - start)}ms`)
     }
     
     return result
@@ -263,7 +263,7 @@ export const performance = {
     func: T,
     wait: number
   ): (...args: Parameters<T>) => void {
-    let timeout: NodeJS.Timeout | null = null
+    let timeout: number | null = null
     
     return (...args: Parameters<T>) => {
       if (timeout) clearTimeout(timeout)

@@ -204,7 +204,8 @@ export const cacheUtils = {
   cleanupAll(): { profile: number; analysis: number; scraping: number } {
     return {
       profile: profileCache.cleanup(),
-      analysis: analysisCache.cleanup()
+      analysis: analysisCache.cleanup(),
+      scraping: 0 // No scraping cache to clean
     }
   },
 
@@ -218,7 +219,14 @@ export const cacheUtils = {
   } {
     return {
       profile: profileCache.getStats(),
-      analysis: analysisCache.getStats()
+      analysis: analysisCache.getStats(),
+      scraping: {
+        size: 0,
+        maxSize: 0,
+        hitRate: 0,
+        oldestEntry: null,
+        newestEntry: null
+      }
     }
   },
 

@@ -1,3 +1,33 @@
+// Global spark interface
+declare global {
+  interface Window {
+    spark: {
+      llmPrompt: (strings: TemplateStringsArray, ...values: any[]) => string
+      llm: (prompt: string, modelName?: string, jsonMode?: boolean) => Promise<string>
+      user: () => Promise<{ avatarUrl: string; email: string; id: string; isOwner: boolean; login: string }>
+      kv: {
+        keys: () => Promise<string[]>
+        get: <T>(key: string) => Promise<T | undefined>
+        set: <T>(key: string, value: T) => Promise<void>
+        delete: (key: string) => Promise<void>
+      }
+    }
+  }
+}
+
+// Access spark globally
+const spark = (typeof window !== 'undefined' && window.spark) || {
+  llmPrompt: (strings: TemplateStringsArray, ...values: any[]) => strings.join(''),
+  llm: async (prompt: string) => Promise.resolve(''),
+  user: async () => Promise.resolve({ avatarUrl: '', email: '', id: '', isOwner: false, login: '' }),
+  kv: {
+    keys: async () => Promise.resolve([]),
+    get: async () => Promise.resolve(undefined),
+    set: async () => Promise.resolve(),
+    delete: async () => Promise.resolve()
+  }
+}
+
 import { ProfileData, ScrapingResult, RateLimitConfig, ScrapingSession } from '../types/linkedin'
 import { CONFIG } from './config'
 
@@ -325,7 +355,7 @@ export class LinkedInScraper {
   /**
    * Infer role level from identifier patterns
    */
-  private inferRoleLevel(identifier: string): string {
+  private inferRoleLevel(identifier: string): 'individual' | 'manager' | 'director' | 'executive' | 'founder' {
     const lowerIdentifier = identifier.toLowerCase()
     
     // Check for executive indicators
@@ -512,7 +542,7 @@ export class LinkedInScraper {
   /**
    * Get verification level based on role and followers
    */
-  private getVerificationLevel(roleLevel: string, followers: number): string {
+  private getVerificationLevel(roleLevel: string, followers: number): 'basic' | 'standard' | 'premium' {
     if (roleLevel === 'executive' || followers > 10000) {
       return Math.random() > 0.4 ? 'premium' : 'standard'
     } else if (roleLevel === 'director' || followers > 3000) {
@@ -524,7 +554,7 @@ export class LinkedInScraper {
   /**
    * Get content frequency based on role
    */
-  private getContentFrequency(roleLevel: string): string {
+  private getContentFrequency(roleLevel: string): 'daily' | 'weekly' | 'monthly' | 'rarely' {
     const frequencies = {
       'executive': ['weekly', 'monthly', 'weekly', 'daily'],
       'director': ['weekly', 'monthly', 'weekly'],
@@ -534,7 +564,7 @@ export class LinkedInScraper {
     }
     
     const options = frequencies[roleLevel as keyof typeof frequencies] || frequencies.individual
-    return options[Math.floor(Math.random() * options.length)]
+    return options[Math.floor(Math.random() * options.length)] as 'daily' | 'weekly' | 'monthly' | 'rarely'
   }
 
   /**
@@ -557,19 +587,19 @@ export class LinkedInScraper {
   /**
    * Get follower growth trend
    */
-  private getFollowerGrowthTrend(followers: number, roleLevel: string): string {
+  private getFollowerGrowthTrend(followers: number, roleLevel: string): 'increasing' | 'stable' | 'decreasing' {
     // More followers = more likely to be stable
     // Executives often have stable follower counts
     if (followers > 15000 || roleLevel === 'executive') {
       const trends = ['stable', 'stable', 'increasing', 'stable']
-      return trends[Math.floor(Math.random() * trends.length)]
+      return trends[Math.floor(Math.random() * trends.length)] as 'increasing' | 'stable' | 'decreasing'
     } else if (roleLevel === 'founder') {
       const trends = ['increasing', 'increasing', 'stable']
-      return trends[Math.floor(Math.random() * trends.length)]
+      return trends[Math.floor(Math.random() * trends.length)] as 'increasing' | 'stable' | 'decreasing'
     }
     
     const trends = ['increasing', 'stable', 'increasing', 'stable', 'decreasing']
-    return trends[Math.floor(Math.random() * trends.length)]
+    return trends[Math.floor(Math.random() * trends.length)] as 'increasing' | 'stable' | 'decreasing'
   }
 
   /**

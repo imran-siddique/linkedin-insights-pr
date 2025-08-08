@@ -7,24 +7,24 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Separator } from '@/components/ui/separator'
 import { 
   Clock, 
-  Zap, 
+  Lightning, 
   CheckCircle, 
-  AlertTriangle, 
+  Warning, 
   Pause,
   Play,
-  BarChart,
+  ChartBar,
   Shield,
   Globe,
   Cpu,
   Activity,
   Timer,
   Database,
-  TrendingUp,
-  AlertCircle
+  TrendUp,
+  WarningCircle
 } from '@phosphor-icons/react'
 import { ScrapingResult, ScrapingSession, ScrapingStats } from '@/types/linkedin'
 import { useLinkedInScraper } from '@/hooks/useLinkedInScraper'
-import { useKV } from '@github/spark/hooks'
+import { useKV } from '../hooks/useKV'
 
 interface ScrapingManagerProps {
   identifier: string
@@ -243,7 +243,7 @@ export function ScrapingManager({
                 {lastResult.success ? (
                   <CheckCircle className="h-4 w-4" />
                 ) : (
-                  <AlertCircle className="h-4 w-4" />
+                  <WarningCircle className="h-4 w-4" />
                 )}
                 <AlertDescription>
                   <div className="flex items-center justify-between">
@@ -360,7 +360,7 @@ export function ScrapingManager({
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center">
-            <BarChart className="h-5 w-5 mr-2" />
+            <ChartBar className="h-5 w-5 mr-2" />
             Scraping Statistics
           </CardTitle>
           <CardDescription>

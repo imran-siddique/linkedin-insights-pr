@@ -11,10 +11,13 @@ export function useLinkedInScraper() {
   // Update rate limit status periodically
   useEffect(() => {
     const updateRateLimits = () => {
-      if (linkedInScraper.getStats) {
-        const stats = linkedInScraper.getStats()
-        setRateLimitStatus(stats)
-      }
+      const stats = linkedInScraper.getStats()
+      setRateLimitStatus({
+        requestsThisMinute: stats.minute,
+        requestsThisHour: stats.hour,
+        requestsToday: stats.day,
+        canMakeRequest: stats.minute < 10 && stats.hour < 100 && stats.day < 500
+      })
     }
 
     updateRateLimits()

@@ -1,3 +1,33 @@
+// Global spark interface
+declare global {
+  interface Window {
+    spark: {
+      llmPrompt: (strings: TemplateStringsArray, ...values: any[]) => string
+      llm: (prompt: string, modelName?: string, jsonMode?: boolean) => Promise<string>
+      user: () => Promise<{ avatarUrl: string; email: string; id: string; isOwner: boolean; login: string }>
+      kv: {
+        keys: () => Promise<string[]>
+        get: <T>(key: string) => Promise<T | undefined>
+        set: <T>(key: string, value: T) => Promise<void>
+        delete: (key: string) => Promise<void>
+      }
+    }
+  }
+}
+
+// Access spark globally
+const spark = (typeof window !== 'undefined' && window.spark) || {
+  llmPrompt: (strings: TemplateStringsArray, ...values: any[]) => strings.join(''),
+  llm: async (prompt: string) => Promise.resolve(''),
+  user: async () => Promise.resolve({ avatarUrl: '', email: '', id: '', isOwner: false, login: '' }),
+  kv: {
+    keys: async () => Promise.resolve([]),
+    get: async () => Promise.resolve(undefined),
+    set: async () => Promise.resolve(),
+    delete: async () => Promise.resolve()
+  }
+}
+
 import { ProfileData, CompetitiveProfile, CompetitiveAnalysis, CompensationAnalysis, ScrapingResult } from '../types/linkedin'
 import { linkedInScraper } from './linkedin-scraper'
 import { CONFIG } from './config'
@@ -184,7 +214,7 @@ export class LinkedInService {
         // Add timestamp metadata
         lastUpdated: new Date().toISOString(),
         scrapedAt: Date.now(),
-        dataFreshness: 'ai-generated' as const,
+        dataFreshness: 'ai-generated',
         confidenceScore: 0.7 + Math.random() * 0.15, // 70-85% confidence for AI-generated data
         
         // Ensure data consistency
@@ -232,10 +262,10 @@ export class LinkedInService {
       hasPhoto: true,
       hasBanner: Math.random() > 0.5,
       lastActive: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      verificationLevel: Math.random() > 0.7 ? 'premium' : 'standard' as const,
-      contentFrequency: ['weekly', 'monthly', 'rarely'][Math.floor(Math.random() * 3)] as const,
+      verificationLevel: Math.random() > 0.7 ? 'premium' : 'standard',
+      contentFrequency: ['weekly', 'monthly', 'rarely'][Math.floor(Math.random() * 3)],
       networkGrowthRate: Math.round((Math.random() * 8 - 2) * 10) / 10,
-      dataFreshness: 'estimated' as const,
+      dataFreshness: 'estimated',
       confidenceScore: 0.5,
       lastUpdated: new Date().toISOString(),
       scrapedAt: Date.now()

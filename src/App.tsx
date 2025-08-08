@@ -1,5 +1,35 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { ErrorBoundary } from 'react-error-boundary'
+
+// Global spark interface
+declare global {
+  interface Window {
+    spark: {
+      llmPrompt: (strings: TemplateStringsArray, ...values: any[]) => string
+      llm: (prompt: string, modelName?: string, jsonMode?: boolean) => Promise<string>
+      user: () => Promise<{ avatarUrl: string; email: string; id: string; isOwner: boolean; login: string }>
+      kv: {
+        keys: () => Promise<string[]>
+        get: <T>(key: string) => Promise<T | undefined>
+        set: <T>(key: string, value: T) => Promise<void>
+        delete: (key: string) => Promise<void>
+      }
+    }
+  }
+}
+
+// Access spark globally
+const spark = (typeof window !== 'undefined' && window.spark) || {
+  llmPrompt: (strings: TemplateStringsArray, ...values: any[]) => strings.join(''),
+  llm: async (prompt: string) => Promise.resolve(''),
+  user: async () => Promise.resolve({ avatarUrl: '', email: '', id: '', isOwner: false, login: '' }),
+  kv: {
+    keys: async () => Promise.resolve([]),
+    get: async () => Promise.resolve(undefined),
+    set: async () => Promise.resolve(),
+    delete: async () => Promise.resolve()
+  }
+}
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -10,25 +40,25 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Separator } from '@/components/ui/separator'
 import { Progress } from '@/components/ui/progress'
 import { 
-  TrendingUp, 
-  TrendingDown, 
+  TrendUp, 
+  TrendDown, 
   Users, 
-  MessageSquare, 
+  ChatCircle, 
   Lightbulb, 
   Hash,
   Calendar,
-  Search,
-  ExternalLink,
+  MagnifyingGlass,
+  ArrowSquareOut,
   Target,
-  Zap,
+  Lightning,
   Brain,
   Star,
   BookOpen,
   Trophy,
   CheckCircle,
-  AlertCircle,
+  WarningCircle,
   Info,
-  BarChart,
+  ChartBar,
   Crown,
   Shield,
   Gauge,
@@ -37,15 +67,15 @@ import {
   Equals,
   CurrencyDollar,
   MapPin,
-  Building,
+  Buildings,
   GraduationCap,
-  TrendingUpDown,
+  ChartLineUp,
   Briefcase,
   Globe,
   Activity,
   Clock
 } from '@phosphor-icons/react'
-import { useKV } from '@github/spark/hooks'
+import { useKV } from '../hooks/useKV'
 import { toast } from 'sonner'
 import { Toaster } from '@/components/ui/sonner'
 import { linkedInService } from '@/lib/linkedin-api'
@@ -328,7 +358,7 @@ function App() {
         // Stage 4: Generate profile insights
         safeAsync(async () => {
           setAnalysisStage('Analyzing profile strengths...')
-          const insights = await linkedInService.getProfileInsights(linkedinId, profileData)
+          const insights = await linkedInService.getProfileInsights(linkedinId || 'unknown', profileData)
           setProfileInsights(insights)
         }, 'Profile Insights Generation'),
 
@@ -342,7 +372,7 @@ function App() {
         // Stage 6: Analyze visual branding
         safeAsync(async () => {
           setAnalysisStage('Evaluating visual branding...')
-          const branding = await linkedInService.analyzeVisualBranding(linkedinId)
+          const branding = await linkedInService.analyzeVisualBranding(linkedinId || 'unknown')
           setVisualBranding(branding)
         }, 'Visual Branding Analysis'),
 
@@ -437,7 +467,7 @@ function App() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center text-orange-700">
-              <AlertCircle className="h-5 w-5 mr-2" />
+              <WarningCircle className="h-5 w-5 mr-2" />
               Areas for Improvement
             </CardTitle>
           </CardHeader>
@@ -445,7 +475,7 @@ function App() {
             <div className="space-y-2">
               {profileInsights.improvements.map((improvement, index) => (
                 <div key={index} className="flex items-start">
-                  <TrendingUp className="h-4 w-4 text-orange-500 mr-2 mt-0.5 flex-shrink-0" />
+                  <TrendUp className="h-4 w-4 text-orange-500 mr-2 mt-0.5 flex-shrink-0" />
                   <span className="text-sm">{improvement}</span>
                 </div>
               ))}
@@ -479,9 +509,9 @@ function App() {
               <p className="text-sm font-medium">Engagement Trend</p>
               <div className="flex items-center">
                 {activityMetrics.engagementTrend === 'increasing' ? (
-                  <TrendingUp className="h-5 w-5 text-green-500 mr-1" />
+                  <TrendUp className="h-5 w-5 text-green-500 mr-1" />
                 ) : (
-                  <TrendingDown className="h-5 w-5 text-gray-500 mr-1" />
+                  <TrendDown className="h-5 w-5 text-gray-500 mr-1" />
                 )}
                 <span className="text-sm font-medium capitalize">{activityMetrics.engagementTrend}</span>
               </div>
@@ -536,9 +566,9 @@ function App() {
             {change !== undefined && (
               <div className="flex items-center text-sm">
                 {change >= 0 ? (
-                  <TrendingUp className="h-4 w-4 text-green-500 mr-1" />
+                  <TrendUp className="h-4 w-4 text-green-500 mr-1" />
                 ) : (
-                  <TrendingDown className="h-4 w-4 text-red-500 mr-1" />
+                  <TrendDown className="h-4 w-4 text-red-500 mr-1" />
                 )}
                 <span className={change >= 0 ? 'text-green-500' : 'text-red-500'}>
                   {Math.abs(change)}%
@@ -762,7 +792,7 @@ function App() {
           
           <p className="text-sm text-muted-foreground">{trend.suggestedAction}</p>
           <Button variant="outline" size="sm">
-            <ExternalLink className="h-4 w-4 mr-2" />
+            <ArrowSquareOut className="h-4 w-4 mr-2" />
             Explore Topic
           </Button>
         </div>
@@ -801,7 +831,7 @@ function App() {
 
               <div className="text-center space-y-2">
                 <div className="flex items-center justify-center">
-                  <TrendingUp className="h-6 w-6 text-accent mr-2" />
+                  <TrendUp className="h-6 w-6 text-accent mr-2" />
                   <span className="text-2xl font-bold">#{competitiveAnalysis.userRanking.engagement.rank}</span>
                 </div>
                 <p className="text-sm text-muted-foreground">Engagement Rank</p>
@@ -863,7 +893,7 @@ function App() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center">
-              <BarChart className="h-5 w-5 mr-2" />
+              <ChartBar className="h-5 w-5 mr-2" />
               Industry Benchmarks
             </CardTitle>
             <CardDescription>
@@ -949,8 +979,8 @@ function App() {
               <div className="flex items-center justify-between">
                 <CardTitle className="text-lg capitalize flex items-center">
                   {gap.category === 'followers' && <Users className="h-5 w-5 mr-2" />}
-                  {gap.category === 'engagement' && <TrendingUp className="h-5 w-5 mr-2" />}
-                  {gap.category === 'content' && <MessageSquare className="h-5 w-5 mr-2" />}
+                  {gap.category === 'engagement' && <TrendUp className="h-5 w-5 mr-2" />}
+                  {gap.category === 'content' && <ChatCircle className="h-5 w-5 mr-2" />}
                   {gap.category === 'skills' && <Brain className="h-5 w-5 mr-2" />}
                   {gap.category === 'optimization' && <Gauge className="h-5 w-5 mr-2" />}
                   {gap.category} Gap
@@ -1186,7 +1216,7 @@ function App() {
 
               <div className="text-center space-y-2">
                 <div className="flex items-center justify-center">
-                  <BarChart className="h-6 w-6 text-accent mr-2" />
+                  <ChartBar className="h-6 w-6 text-accent mr-2" />
                   <span className="text-2xl font-bold">{compensationAnalysis.currentMarketPosition.percentileRanking}th</span>
                 </div>
                 <p className="text-sm text-muted-foreground">Percentile</p>
@@ -1228,7 +1258,7 @@ function App() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center">
-              <TrendingUpDown className="h-5 w-5 mr-2" />
+              <ChartLineUp className="h-5 w-5 mr-2" />
               Benchmark Comparison
             </CardTitle>
             <CardDescription>
@@ -1238,7 +1268,7 @@ function App() {
           <CardContent>
             <div className="space-y-4">
               {[
-                { label: 'Industry Average', value: compensationAnalysis.benchmarkComparison.industryMedian, icon: Building },
+                { label: 'Industry Average', value: compensationAnalysis.benchmarkComparison.industryMedian, icon: Buildings },
                 { label: 'Role Average', value: compensationAnalysis.benchmarkComparison.roleMedian, icon: Briefcase },
                 { label: 'Location Average', value: compensationAnalysis.benchmarkComparison.locationMedian, icon: MapPin },
                 { label: 'Experience Level', value: compensationAnalysis.benchmarkComparison.experienceMedian, icon: GraduationCap }
@@ -1316,7 +1346,7 @@ function App() {
           <Card className="mb-8">
             <CardHeader>
               <CardTitle className="flex items-center">
-                <Search className="h-6 w-6 mr-2" />
+                <MagnifyingGlass className="h-6 w-6 mr-2" />
                 Analyze Your LinkedIn Profile
               </CardTitle>
               <CardDescription>
@@ -1356,7 +1386,7 @@ function App() {
                         </>
                       ) : (
                         <>
-                          <Zap className="h-4 w-4 mr-2" />
+                          <Lightning className="h-4 w-4 mr-2" />
                           Analyze Profile
                         </>
                       )}
@@ -1376,7 +1406,7 @@ function App() {
                 
                 {error && (
                   <Alert className="border-red-200 bg-red-50">
-                    <AlertCircle className="h-4 w-4" />
+                    <WarningCircle className="h-4 w-4" />
                     <AlertDescription className="text-red-800">{error}</AlertDescription>
                   </Alert>
                 )}
@@ -1472,9 +1502,9 @@ function App() {
                             profileData.followerGrowthTrend === 'stable' ? 'text-blue-700 border-blue-200' :
                             'text-orange-700 border-orange-200'
                           }>
-                            {profileData.followerGrowthTrend === 'increasing' && <TrendingUp className="h-3 w-3 mr-1" />}
+                            {profileData.followerGrowthTrend === 'increasing' && <TrendUp className="h-3 w-3 mr-1" />}
                             {profileData.followerGrowthTrend === 'stable' && <Equals className="h-3 w-3 mr-1" />}
-                            {profileData.followerGrowthTrend === 'decreasing' && <TrendingDown className="h-3 w-3 mr-1" />}
+                            {profileData.followerGrowthTrend === 'decreasing' && <TrendDown className="h-3 w-3 mr-1" />}
                             {profileData.followerGrowthTrend}
                           </Badge>
                         )}
@@ -1528,14 +1558,14 @@ function App() {
                 change={profileData.contentFrequency === 'daily' ? 25 :
                         profileData.contentFrequency === 'weekly' ? 10 :
                         profileData.contentFrequency === 'monthly' ? -2 : -8}
-                icon={MessageSquare}
+                icon={ChatCircle}
               />
               <MetricCard
                 title="Engagement Rate"
                 value={`${profileData.engagement}%`}
                 change={profileData.followers < 1000 ? 15 : 
                         profileData.followers < 5000 ? 8 : 3}
-                icon={TrendingUp}
+                icon={TrendUp}
               />
             </div>
 
@@ -1571,7 +1601,7 @@ function App() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center">
-                  <BarChart className="h-5 w-5 mr-2" />
+                  <ChartBar className="h-5 w-5 mr-2" />
                   LinkedIn Follower Benchmarks
                 </CardTitle>
                 <CardDescription>
@@ -1703,7 +1733,7 @@ function App() {
                         <div className="space-y-1">
                           {visualBranding.recommendations.slice(0, 2).map((rec, index) => (
                             <p key={index} className="text-xs text-muted-foreground flex items-start">
-                              <TrendingUp className="h-3 w-3 mr-1 mt-0.5 flex-shrink-0" />
+                              <TrendUp className="h-3 w-3 mr-1 mt-0.5 flex-shrink-0" />
                               {rec}
                             </p>
                           ))}
@@ -1726,11 +1756,11 @@ function App() {
                   Skill Insights
                 </TabsTrigger>
                 <TabsTrigger value="trends">
-                  <TrendingUp className="h-4 w-4 mr-2" />
+                  <TrendUp className="h-4 w-4 mr-2" />
                   Trends
                 </TabsTrigger>
                 <TabsTrigger value="competitive">
-                  <BarChart className="h-4 w-4 mr-2" />
+                  <ChartBar className="h-4 w-4 mr-2" />
                   Competition
                 </TabsTrigger>
                 <TabsTrigger value="salary">
@@ -1929,7 +1959,7 @@ function App() {
                                         <div className="flex flex-wrap gap-2">
                                           {skill.topPayingCompanies.slice(0, 4).map((company, idx) => (
                                             <Badge key={idx} variant="secondary" className="text-xs">
-                                              <Building className="h-3 w-3 mr-1" />
+                                              <Buildings className="h-3 w-3 mr-1" />
                                               {company}
                                             </Badge>
                                           ))}
@@ -2049,7 +2079,7 @@ function App() {
                                         <div className="flex flex-wrap gap-1">
                                           {benchmark.companies.slice(0, 4).map((company, idx) => (
                                             <Badge key={idx} variant="secondary" className="text-xs">
-                                              <Building className="h-3 w-3 mr-1" />
+                                              <Buildings className="h-3 w-3 mr-1" />
                                               {company}
                                             </Badge>
                                           ))}
