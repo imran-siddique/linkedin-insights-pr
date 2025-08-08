@@ -1,68 +1,62 @@
-import react from "@vitejs/plugin-react"
-import { defineConfig, PluginOption } from "vite"
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
 import { resolve } from 'path'
 
-import sparkPlugin from "@github/spark/spark-vite-plugin"
-import createIconImportProxy from "@github/spark/vitePhosphorIconProxyPlugin"
-
-const projectRoot = process.env.PROJECT_ROOT || import.meta.dirname
-
-// https://vite.dev/config/
-export default defineConfig(({ command, mode }) => {
-  const isDev = command === 'serve'
-  const isProd = mode === 'production'
-
-  return {
-    plugins: [
-      react(),
-      // DO NOT REMOVE
-      createIconImportProxy() as PluginOption,
-      sparkPlugin() as PluginOption,
+// https://vitejs.dev/config/
+export default defineConfig({
+  plugins: [react()],
+  resolve: {
+    alias: {
+      '@': resolve(__dirname, './src'),
+    },
+  },
+  build: {
+    outDir: 'dist',
+    assetsDir: 'assets',
+    sourcemap: false,
+    minify: 'terser',
+    cssMinify: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          ui: ['@phosphor-icons/react', 'sonner', 'framer-motion'],
+        },
+        chunkFileNames: 'assets/[name]-[hash].js',
+        entryFileNames: 'assets/[name]-[hash].js',
+        assetFileNames: 'assets/[name]-[hash].[ext]'
+      }
+    },
+    terserOptions: {
+      compress: {
+        drop_console: true,
+        drop_debugger: true,
+      },
+    },
+    reportCompressedSize: false,
+    chunkSizeWarningLimit: 1000,
+  },
+  server: {
+    port: 5173,
+    host: true,
+    strictPort: true,
+  },
+  preview: {
+    port: 4173,
+    host: true,
+  },
+  define: {
+    __APP_VERSION__: JSON.stringify(process.env.npm_package_version),
+    __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
+  },
+  optimizeDeps: {
+    include: [
+      'react',
+      'react-dom',
+      '@phosphor-icons/react',
+      'sonner',
+      'framer-motion',
+      'react-error-boundary'
     ],
-    resolve: {
-      alias: {
-        '@': resolve(projectRoot, 'src')
-      }
-    },
-    optimizeDeps: {
-      exclude: ['@github/spark']
-    },
-    build: {
-      // Production optimization
-      minify: isProd ? 'terser' : false,
-      sourcemap: isDev || process.env.VITE_SOURCE_MAP === 'true',
-      target: 'esnext',
-      
-      // Build size warnings
-      chunkSizeWarningLimit: 1000, // KB
-    },
-    
-    // Development server configuration
-    server: {
-      host: true,
-      port: 5173,
-      strictPort: false,
-      cors: true,
-      hmr: {
-        overlay: isDev
-      }
-    },
-    
-    // Preview server (for production builds)
-    preview: {
-      host: true,
-      port: 4173,
-      strictPort: false,
-      cors: true
-    },
-    
-    // Environment variable prefix
-    envPrefix: ['VITE_', 'NODE_'],
-    
-    // Define global constants
-    define: {
-      __APP_VERSION__: JSON.stringify(process.env.npm_package_version || '1.0.0'),
-      __BUILD_DATE__: JSON.stringify(new Date().toISOString()),
-    }
-  }
+  },
 })
