@@ -9,7 +9,6 @@ import { Badge } from '@/components/ui/badge'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Separator } from '@/components/ui/separator'
 import { Progress } from '@/components/ui/progress'
-import { Skeleton } from '@/components/ui/skeleton'
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -42,11 +41,9 @@ import {
   GraduationCap,
   TrendingUpDown,
   Briefcase,
-  Calculator,
   Globe,
   Activity,
-  Clock,
-  Timer
+  Clock
 } from '@phosphor-icons/react'
 import { useKV } from '@github/spark/hooks'
 import { toast } from 'sonner'
@@ -68,7 +65,6 @@ import {
   ActivityMetrics,
   VisualBrandingAnalysis,
   CompetitiveAnalysis,
-  CompetitiveProfile,
   CompensationAnalysis,
   ScrapingResult
 } from '@/types/linkedin'
