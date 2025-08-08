@@ -1,4 +1,3 @@
-import tailwindcss from "@tailwindcss/vite"
 import react from "@vitejs/plugin-react"
 import { defineConfig, PluginOption } from "vite"
 import { resolve } from 'path'
@@ -16,7 +15,6 @@ export default defineConfig(({ command, mode }) => {
   return {
     plugins: [
       react(),
-      tailwindcss(),
       // DO NOT REMOVE
       createIconImportProxy() as PluginOption,
       sparkPlugin() as PluginOption,

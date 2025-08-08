@@ -6,7 +6,12 @@ export function useLinkedInScraper() {
   const [isActive, setIsActive] = useState(false)
   const [currentSession, setCurrentSession] = useState<ScrapingSession | null>(null)
   const [lastResult, setLastResult] = useState<ScrapingResult | null>(null)
-  const [rateLimitStatus, setRateLimitStatus] = useState({ minute: 0, hour: 0, day: 0 })
+  const [rateLimitStatus, setRateLimitStatus] = useState({ 
+    requestsThisMinute: 0, 
+    requestsThisHour: 0, 
+    requestsToday: 0, 
+    canMakeRequest: true 
+  })
 
   // Update rate limit status periodically
   useEffect(() => {
