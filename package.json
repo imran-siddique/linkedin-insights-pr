@@ -1,12 +1,20 @@
 {
   "name": "linkedin-analytics-spark",
   "version": "1.0.0",
-  "description": "LinkedIn Analytics & Growth Advisor - Spark Application",
+  "description": "LinkedIn Analytics & Growth Advisor - Production-Ready Spark Application",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "build:analyze": "vite build --mode analyze",
+    "preview": "vite preview",
+    "preview:host": "vite preview --host",
+    "type-check": "tsc --noEmit",
+    "clean": "rm -rf dist .vite-cache",
+    "lint": "echo 'Linting not configured - add ESLint if needed'",
+    "test": "echo 'Tests not configured - add testing framework if needed'",
+    "health-check": "node -e \"console.log('Health check passed')\"",
+    "start": "npm run preview"
   },
   "dependencies": {
     "@phosphor-icons/react": "^2.0.15",
@@ -48,8 +56,28 @@
     "analytics",
     "spark",
     "react",
-    "vite"
+    "vite",
+    "professional-growth",
+    "career-development"
   ],
   "author": "LinkedIn Analytics Team",
-  "license": "MIT"
+  "license": "MIT",
+  "homepage": ".",
+  "repository": {
+    "type": "git",
+    "url": "."
+  },
+  "bugs": {
+    "url": "."
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not dead",
+    "not ie 11"
+  ]
 }

@@ -1,4 +1,5 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
+import { ErrorBoundary } from 'react-error-boundary'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -52,6 +53,12 @@ import { toast } from 'sonner'
 import { linkedInService } from '@/lib/linkedin-api'
 import { linkedInScraper } from '@/lib/linkedin-scraper'
 import ScrapingManager from '@/components/ScrapingManager'
+import { ErrorFallback } from '@/ErrorFallback'
+import { CONFIG } from '@/lib/config'
+import { errorService, safeAsync, setupGlobalErrorHandling } from '@/lib/errorHandling'
+import { validation, security, performance } from '@/lib/security'
+import { profileCache, analysisCache, cacheUtils } from '@/lib/cache'
+import { healthMonitor } from '@/lib/monitoring'
 import { 
   ProfileData, 
   Recommendation, 
@@ -78,20 +85,100 @@ function App() {
   const [visualBranding, setVisualBranding] = useKV<VisualBrandingAnalysis | null>('visual-branding', null)
   const [competitiveAnalysis, setCompetitiveAnalysis] = useKV<CompetitiveAnalysis | null>('competitive-analysis', null)
   const [compensationAnalysis, setCompensationAnalysis] = useKV<CompensationAnalysis | null>('compensation-analysis', null)
+  const [lastAnalysisTime, setLastAnalysisTime] = useKV<number | null>('last-analysis-time', null)
   const [error, setError] = useState('')
   const [analysisStage, setAnalysisStage] = useState('')
   const [scrapingResult, setScrapingResult] = useState<ScrapingResult | null>(null)
   const [showScrapingManager, setShowScrapingManager] = useState(false)
 
+  // Setup global error handling on component mount
+  useEffect(() => {
+    setupGlobalErrorHandling()
+    
+    // Log application startup
+    if (CONFIG.ENABLE_DEBUG_MODE) {
+      console.log(`🚀 ${CONFIG.APP_NAME} v${CONFIG.APP_VERSION} started`)
+      console.log('Configuration:', CONFIG)
+      console.log('Health Status:', healthMonitor.getHealthStatus())
+    }
+
+    // Record error events for health monitoring
+    const originalLogError = errorService.logError
+    errorService.logError = (error: Error, context?: string) => {
+      healthMonitor.recordError()
+      return originalLogError.call(errorService, error, context)
+    }
+
+    return () => {
+      // Cleanup on unmount
+      cacheUtils.cleanupAll()
+      
+      if (CONFIG.ENABLE_DEBUG_MODE) {
+        console.log('🏁 Application cleanup completed')
+        console.log('Final Health Status:', healthMonitor.getHealthStatus())
+      }
+    }
+  }, [])
+
+  // Debounced input validation
+  const debouncedValidateInput = useCallback(
+    performance.debounce((input: string) => {
+      if (!input.trim()) {
+        setError('')
+        return
+      }
+
+      const validation_result = validation.validateLinkedInInput(input)
+      if (!validation_result.isValid && validation_result.error) {
+        setError(validation_result.error)
+      } else {
+        setError('')
+      }
+    }, 500),
+    []
+  )
+
+  // Handle input changes with validation
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    setLinkedinUrl(value)
+    debouncedValidateInput(value)
+  }, [debouncedValidateInput])
+
+  // Memoized validation result
+  const inputValidation = useMemo(() => {
+    if (!linkedinUrl.trim()) return { isValid: true }
+    return validation.validateLinkedInInput(linkedinUrl.trim())
+  }, [linkedinUrl])
+
   const analyzeProfile = async () => {
-    if (!linkedinUrl.trim()) {
-      setError('Please enter a LinkedIn profile URL or username')
+    // Input validation
+    const validationResult = validation.validateLinkedInInput(linkedinUrl.trim())
+    if (!validationResult.isValid) {
+      setError(validationResult.error || 'Invalid input')
       return
     }
 
-    const linkedinId = linkedInService.extractLinkedInUsername(linkedinUrl.trim())
+    const sanitizedInput = validationResult.sanitized!
+    const linkedinId = linkedInService.extractLinkedInUsername(sanitizedInput)
     if (!linkedinId) {
       setError('Please enter a valid LinkedIn profile URL or username')
+      return
+    }
+
+    // Rate limiting check
+    const rateLimitCheck = security.checkRateLimit('profile_analysis')
+    if (!rateLimitCheck.allowed) {
+      const waitTime = Math.ceil((rateLimitCheck.retryAfter || 0) / 1000)
+      setError(`Rate limit exceeded. Please wait ${waitTime} seconds before trying again.`)
+      toast.error(`Rate limit exceeded. Wait ${waitTime}s`)
+      return
+    }
+
+    // Check minimum interval between analyses
+    if (!security.checkAnalysisInterval(lastAnalysisTime)) {
+      const waitTime = Math.ceil((CONFIG.MIN_ANALYSIS_INTERVAL - (Date.now() - (lastAnalysisTime || 0))) / 1000)
+      setError(`Please wait ${waitTime} seconds between analyses.`)
       return
     }
 
@@ -101,11 +188,15 @@ function App() {
     setShowScrapingManager(true)
 
     try {
-      // The profile data will be handled by the ScrapingManager
-      // Continue with AI analysis after scraping completes
+      setLastAnalysisTime(Date.now())
+      
+      // Log analysis start
+      if (CONFIG.ENABLE_DEBUG_MODE) {
+        console.log(`🔍 Starting analysis for: ${linkedinId}`)
+      }
       
     } catch (error: any) {
-      console.error('Analysis initialization error:', error)
+      errorService.logError(error, 'Analysis Initialization')
       setError(error.message || 'Failed to initialize profile analysis.')
       toast.error('Analysis initialization failed.')
       setIsLoading(false)
@@ -123,6 +214,10 @@ function App() {
       const fetchedProfileData = result.data
       setProfileData(fetchedProfileData)
 
+      // Cache the profile data
+      const cacheKey = cacheUtils.generateKey('profile', fetchedProfileData.name, fetchedProfileData.industry)
+      profileCache.set(cacheKey, fetchedProfileData)
+
       // Continue with enhanced AI analysis
       await performAIAnalysis(fetchedProfileData)
       
@@ -131,7 +226,7 @@ function App() {
       toast.success(`Profile analyzed successfully via ${result.source}! 🎉`)
       
     } catch (error: any) {
-      console.error('Post-scraping analysis error:', error)
+      errorService.logError(error, 'Post-scraping Analysis')
       setError(error.message || 'Failed to complete analysis after scraping.')
       toast.error('Analysis completion failed.')
     } finally {
@@ -140,7 +235,7 @@ function App() {
   }
 
   const handleScrapingError = (errorMessage: string) => {
-    console.error('Scraping error:', errorMessage)
+    errorService.logError(new Error(errorMessage), 'Scraping Process')
     setError(`Scraping failed: ${errorMessage}`)
     setIsLoading(false)
     setShowScrapingManager(false)
@@ -151,114 +246,137 @@ function App() {
     const linkedinId = linkedInService.extractLinkedInUsername(linkedinUrl.trim())
     
     try {
+      // Check cache first for analysis results
+      const analysisCacheKey = cacheUtils.generateKey('analysis', linkedinId || '', profileData.industry)
+      const cachedAnalysis = analysisCache.get(analysisCacheKey)
+      
+      if (cachedAnalysis && CONFIG.ENABLE_DEBUG_MODE) {
+        console.log('💾 Using cached analysis results')
+      }
+
       // Stage 1: Generate AI-powered recommendations
       setAnalysisStage('Generating personalized recommendations...')
-      const prompt = spark.llmPrompt`Based on this LinkedIn profile data: ${JSON.stringify(profileData)}, generate 8 specific, actionable recommendations for improving their LinkedIn presence and professional growth. Focus heavily on their skills: ${profileData.skills.join(', ')}. For each recommendation, consider:
-      - Current market trends for their skills
-      - Opportunities to showcase expertise
-      - Skills to develop or highlight
-      - Ways to position themselves in the market
-      - Their experience level of ${profileData.experience} years
-      - Their industry: ${profileData.industry}
-      - Real-time data freshness: ${profileData.dataFreshness || 'unknown'}
+      const recommendationsResult = await safeAsync(async () => {
+        const prompt = spark.llmPrompt`Based on this LinkedIn profile data: ${JSON.stringify(profileData)}, generate 8 specific, actionable recommendations for improving their LinkedIn presence and professional growth. Focus heavily on their skills: ${profileData.skills.join(', ')}. For each recommendation, consider:
+        - Current market trends for their skills
+        - Opportunities to showcase expertise
+        - Skills to develop or highlight
+        - Ways to position themselves in the market
+        - Their experience level of ${profileData.experience} years
+        - Their industry: ${profileData.industry}
+        - Real-time data freshness: ${profileData.dataFreshness || 'unknown'}
 
-      Format as JSON array with fields: category (content/networking/optimization/skills), title, description, priority (high/medium/low), action, relatedSkills (array of relevant skills), impactScore (1-10).`
-      
-      try {
-        const recommendationsResponse = await spark.llm(prompt, 'gpt-4o-mini', true)
-        const parsedRecommendations = JSON.parse(recommendationsResponse)
-        const generatedRecommendations = Array.isArray(parsedRecommendations) 
-          ? parsedRecommendations.map((rec: any, index: number) => ({
-              ...rec,
-              id: `rec-${index}`
-            }))
+        Format as JSON array with fields: category (content/networking/optimization/skills), title, description, priority (high/medium/low), action, relatedSkills (array of relevant skills), impactScore (1-10).`
+        
+        const response = await spark.llm(prompt, 'gpt-4o-mini', true)
+        const parsed = JSON.parse(response)
+        return Array.isArray(parsed) 
+          ? parsed.map((rec: any, index: number) => ({ ...rec, id: `rec-${index}` }))
           : []
+      }, 'AI Recommendations Generation', [])
 
-        setRecommendations(generatedRecommendations)
-      } catch (parseError) {
-        console.error('Failed to parse recommendations:', parseError)
-        setRecommendations([])
+      if (recommendationsResult) {
+        setRecommendations(recommendationsResult)
       }
 
       // Stage 2: Generate skill-aware trending topics
       setAnalysisStage('Analyzing industry trends...')
-      const trendPrompt = spark.llmPrompt`For someone in the ${profileData.industry} industry with these skills: ${profileData.skills.join(', ')} and ${profileData.experience} years of experience, identify 6 current trending topics they should engage with on LinkedIn. Consider:
-      - Emerging technologies related to their skills
-      - Industry shifts affecting their expertise
-      - New applications of their existing skills
-      - Complementary skills they should develop
-      - Their professional level and experience
-      - Data recency: profile data is ${profileData.dataFreshness || 'estimated'}
-      
-      Format as JSON array with fields: topic, relevanceScore (1-10), hashtags (array), suggestedAction, relatedSkills (array), marketDemand (high/medium/low), difficulty (beginner/intermediate/advanced), estimatedReach (number), competitionLevel (low/medium/high).`
-      
-      try {
-        const trendsResponse = await spark.llm(trendPrompt, 'gpt-4o-mini', true)
-        const parsedTrends = JSON.parse(trendsResponse)
-        const generatedTrends = Array.isArray(parsedTrends) ? parsedTrends : []
+      const trendsResult = await safeAsync(async () => {
+        const prompt = spark.llmPrompt`For someone in the ${profileData.industry} industry with these skills: ${profileData.skills.join(', ')} and ${profileData.experience} years of experience, identify 6 current trending topics they should engage with on LinkedIn. Consider:
+        - Emerging technologies related to their skills
+        - Industry shifts affecting their expertise
+        - New applications of their existing skills
+        - Complementary skills they should develop
+        - Their professional level and experience
+        - Data recency: profile data is ${profileData.dataFreshness || 'estimated'}
+        
+        Format as JSON array with fields: topic, relevanceScore (1-10), hashtags (array), suggestedAction, relatedSkills (array), marketDemand (high/medium/low), difficulty (beginner/intermediate/advanced), estimatedReach (number), competitionLevel (low/medium/high).`
+        
+        const response = await spark.llm(prompt, 'gpt-4o-mini', true)
+        const parsed = JSON.parse(response)
+        return Array.isArray(parsed) ? parsed : []
+      }, 'Trending Topics Analysis', [])
 
-        setTrendingTopics(generatedTrends)
-      } catch (parseError) {
-        console.error('Failed to parse trends:', parseError)
-        setTrendingTopics([])
+      if (trendsResult) {
+        setTrendingTopics(trendsResult)
       }
 
       // Stage 3: Generate skill insights
       setAnalysisStage('Evaluating skill market value...')
-      const skillPrompt = spark.llmPrompt`Analyze these skills for market opportunities: ${profileData.skills.join(', ')}. For each skill, provide detailed insights on:
-      - Current market demand and growth potential
-      - Growth trajectory (growing/stable/declining)
-      - Salary impact potential
-      - Specific learning resources to advance
-      - Related opportunities in the market
-      - Demand score out of 100
-      - Average salary increase potential
-      
-      Consider the person has ${profileData.experience} years of experience in ${profileData.industry}.
-      Profile data quality: ${profileData.confidenceScore ? Math.round(profileData.confidenceScore * 100) : 'unknown'}% confidence.
-      
-      Format as JSON array with fields: skill, marketDemand (high/medium/low), growth (growing/stable/declining), salary_impact (high/medium/low), learning_resources (array), related_opportunities (array), demandScore (1-100), averageSalaryIncrease (percentage string).`
-      
-      try {
-        const skillResponse = await spark.llm(skillPrompt, 'gpt-4o-mini', true)
-        const parsedSkillInsights = JSON.parse(skillResponse)
-        const generatedSkillInsights = Array.isArray(parsedSkillInsights) ? parsedSkillInsights : []
+      const skillsResult = await safeAsync(async () => {
+        const prompt = spark.llmPrompt`Analyze these skills for market opportunities: ${profileData.skills.join(', ')}. For each skill, provide detailed insights on:
+        - Current market demand and growth potential
+        - Growth trajectory (growing/stable/declining)
+        - Salary impact potential
+        - Specific learning resources to advance
+        - Related opportunities in the market
+        - Demand score out of 100
+        - Average salary increase potential
+        
+        Consider the person has ${profileData.experience} years of experience in ${profileData.industry}.
+        Profile data quality: ${profileData.confidenceScore ? Math.round(profileData.confidenceScore * 100) : 'unknown'}% confidence.
+        
+        Format as JSON array with fields: skill, marketDemand (high/medium/low), growth (growing/stable/declining), salary_impact (high/medium/low), learning_resources (array), related_opportunities (array), demandScore (1-100), averageSalaryIncrease (percentage string).`
+        
+        const response = await spark.llm(prompt, 'gpt-4o-mini', true)
+        const parsed = JSON.parse(response)
+        return Array.isArray(parsed) ? parsed : []
+      }, 'Skill Market Analysis', [])
 
-        setSkillInsights(generatedSkillInsights)
-      } catch (parseError) {
-        console.error('Failed to parse skill insights:', parseError)
-        setSkillInsights([])
+      if (skillsResult) {
+        setSkillInsights(skillsResult)
       }
 
-      // Stage 4: Generate profile insights
-      setAnalysisStage('Analyzing profile strengths...')
-      const insights = await linkedInService.getProfileInsights(linkedinId, profileData)
-      setProfileInsights(insights)
+      // Continue with remaining analysis stages
+      await Promise.allSettled([
+        // Stage 4: Generate profile insights
+        safeAsync(async () => {
+          setAnalysisStage('Analyzing profile strengths...')
+          const insights = await linkedInService.getProfileInsights(linkedinId, profileData)
+          setProfileInsights(insights)
+        }, 'Profile Insights Generation'),
 
-      // Stage 5: Analyze activity metrics
-      setAnalysisStage('Calculating activity metrics...')
-      const metrics = await linkedInService.getActivityMetrics(profileData)
-      setActivityMetrics(metrics)
+        // Stage 5: Analyze activity metrics
+        safeAsync(async () => {
+          setAnalysisStage('Calculating activity metrics...')
+          const metrics = await linkedInService.getActivityMetrics(profileData)
+          setActivityMetrics(metrics)
+        }, 'Activity Metrics Calculation'),
 
-      // Stage 6: Analyze visual branding
-      setAnalysisStage('Evaluating visual branding...')
-      const branding = await linkedInService.analyzeVisualBranding(linkedinId)
-      setVisualBranding(branding)
+        // Stage 6: Analyze visual branding
+        safeAsync(async () => {
+          setAnalysisStage('Evaluating visual branding...')
+          const branding = await linkedInService.analyzeVisualBranding(linkedinId)
+          setVisualBranding(branding)
+        }, 'Visual Branding Analysis'),
 
-      // Stage 7: Perform competitive analysis
-      setAnalysisStage('Analyzing competitive landscape...')
-      const competitiveData = await linkedInService.performCompetitiveAnalysis(profileData)
-      setCompetitiveAnalysis(competitiveData)
+        // Stage 7: Perform competitive analysis
+        safeAsync(async () => {
+          setAnalysisStage('Analyzing competitive landscape...')
+          const competitiveData = await linkedInService.performCompetitiveAnalysis(profileData)
+          setCompetitiveAnalysis(competitiveData)
+        }, 'Competitive Analysis'),
 
-      // Stage 8: Generate compensation analysis
-      setAnalysisStage('Analyzing salary benchmarks and compensation...')
-      const compensationData = await linkedInService.generateCompensationAnalysis(profileData)
-      setCompensationAnalysis(compensationData)
+        // Stage 8: Generate compensation analysis
+        safeAsync(async () => {
+          setAnalysisStage('Analyzing salary benchmarks and compensation...')
+          const compensationData = await linkedInService.generateCompensationAnalysis(profileData)
+          setCompensationAnalysis(compensationData)
+        }, 'Compensation Analysis')
+      ])
+
+      // Cache the complete analysis results
+      const completeAnalysis = {
+        recommendations: recommendationsResult,
+        trends: trendsResult,
+        skills: skillsResult,
+        timestamp: Date.now()
+      }
+      analysisCache.set(analysisCacheKey, completeAnalysis)
 
     } catch (error: any) {
-      console.error('AI analysis error:', error)
-      // Don't throw error here, as we still have the scraped profile data
-      console.warn('Some AI analysis steps failed, but profile data is available')
+      errorService.logError(error, 'AI Analysis Pipeline')
+      errorService.logWarning('Some AI analysis steps failed, but profile data is available', 'Analysis Pipeline')
     }
   }
 
@@ -1162,88 +1280,125 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8 max-w-6xl">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-foreground mb-2">
-            LinkedIn Analytics & Growth Advisor
-          </h1>
-          <p className="text-lg text-muted-foreground">
-            Unlock insights from your LinkedIn profile and discover opportunities for professional growth
-          </p>
-        </div>
-
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Search className="h-6 w-6 mr-2" />
-              Analyze Your LinkedIn Profile
-            </CardTitle>
-            <CardDescription>
-              Enter your LinkedIn profile URL or username to get comprehensive insights and growth recommendations
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex space-x-4">
-                <div className="flex-1">
-                  <Label htmlFor="linkedin-url">LinkedIn Profile URL or Username</Label>
-                  <Input
-                    id="linkedin-url"
-                    placeholder="linkedin.com/in/username or just username"
-                    value={linkedinUrl}
-                    onChange={(e) => setLinkedinUrl(e.target.value)}
-                    className="mt-1"
-                  />
-                </div>
-                <div className="flex items-end">
-                  <Button onClick={analyzeProfile} disabled={isLoading} className="px-6">
-                    {isLoading ? (
-                      <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                        Analyzing...
-                      </>
-                    ) : (
-                      <>
-                        <Zap className="h-4 w-4 mr-2" />
-                        Analyze Profile
-                      </>
-                    )}
-                  </Button>
-                </div>
+    <ErrorBoundary
+      FallbackComponent={ErrorFallback}
+      onError={(error, errorInfo) => {
+        errorService.logError(error, 'React Error Boundary')
+        if (CONFIG.ENABLE_DEBUG_MODE) {
+          console.error('React Error Boundary caught error:', error, errorInfo)
+        }
+      }}
+      onReset={() => {
+        // Clear any problematic state
+        setError('')
+        setIsLoading(false)
+        setShowScrapingManager(false)
+        
+        if (CONFIG.ENABLE_DEBUG_MODE) {
+          console.log('🔄 Application reset after error')
+        }
+      }}
+    >
+      <div className="min-h-screen bg-background">
+        <div className="container mx-auto px-4 py-8 max-w-6xl">
+          <div className="text-center mb-8">
+            <h1 className="text-4xl font-bold text-foreground mb-2">
+              {CONFIG.APP_NAME}
+            </h1>
+            <p className="text-lg text-muted-foreground">
+              Unlock insights from your LinkedIn profile and discover opportunities for professional growth
+            </p>
+            {CONFIG.ENABLE_DEBUG_MODE && (
+              <div className="mt-2">
+                <Badge variant="outline" className="text-xs">
+                  v{CONFIG.APP_VERSION} • Debug Mode
+                </Badge>
               </div>
-              
-              <Alert className="border-blue-200 bg-blue-50">
-                <Info className="h-4 w-4" />
-                <AlertDescription className="text-blue-800">
-                  <strong>Enhanced Analysis:</strong> Real-time profile scraping with accurate follower count estimation, 
-                  skill market value analysis, industry-specific benchmarking, competitive analysis, 
-                  salary & compensation insights, content strategy recommendations, and personalized growth opportunities 
-                  based on your professional level and industry.
-                </AlertDescription>
-              </Alert>
-              
-              {error && (
-                <Alert className="border-red-200 bg-red-50">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription className="text-red-800">{error}</AlertDescription>
+            )}
+          </div>
+
+          <Card className="mb-8">
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Search className="h-6 w-6 mr-2" />
+                Analyze Your LinkedIn Profile
+              </CardTitle>
+              <CardDescription>
+                Enter your LinkedIn profile URL or username to get comprehensive insights and growth recommendations
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="flex space-x-4">
+                  <div className="flex-1">
+                    <Label htmlFor="linkedin-url">LinkedIn Profile URL or Username</Label>
+                    <Input
+                      id="linkedin-url"
+                      placeholder="linkedin.com/in/username or just username"
+                      value={linkedinUrl}
+                      onChange={handleInputChange}
+                      className={`mt-1 ${!inputValidation.isValid ? 'border-destructive' : ''}`}
+                      maxLength={CONFIG.MAX_INPUT_LENGTH}
+                      disabled={isLoading}
+                    />
+                    {linkedinUrl && !inputValidation.isValid && (
+                      <p className="text-sm text-destructive mt-1">
+                        {inputValidation.error}
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex items-end">
+                    <Button 
+                      onClick={analyzeProfile} 
+                      disabled={isLoading || !inputValidation.isValid || !linkedinUrl.trim()}
+                      className="px-6"
+                    >
+                      {isLoading ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                          Analyzing...
+                        </>
+                      ) : (
+                        <>
+                          <Zap className="h-4 w-4 mr-2" />
+                          Analyze Profile
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </div>
+                
+                <Alert className="border-blue-200 bg-blue-50">
+                  <Info className="h-4 w-4" />
+                  <AlertDescription className="text-blue-800">
+                    <strong>Enhanced Analysis:</strong> Real-time profile scraping with accurate follower count estimation, 
+                    skill market value analysis, industry-specific benchmarking, competitive analysis, 
+                    salary & compensation insights, content strategy recommendations, and personalized growth opportunities 
+                    based on your professional level and industry.
+                  </AlertDescription>
                 </Alert>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+                
+                {error && (
+                  <Alert className="border-red-200 bg-red-50">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription className="text-red-800">{error}</AlertDescription>
+                  </Alert>
+                )}
+              </div>
+            </CardContent>
+          </Card>
 
-        {isLoading && <LoadingStateCard stage={analysisStage} />}
+          {isLoading && <LoadingStateCard stage={analysisStage} />}
 
-        {/* Real-time Scraping Manager */}
-        {showScrapingManager && (
-          <ScrapingManager 
-            identifier={linkedInService.extractLinkedInUsername(linkedinUrl.trim()) || ''}
-            onScrapingComplete={handleScrapingComplete}
-            onScrapingError={handleScrapingError}
-            autoStart={true}
-          />
-        )}
+          {/* Real-time Scraping Manager */}
+          {showScrapingManager && (
+            <ScrapingManager 
+              identifier={linkedInService.extractLinkedInUsername(linkedinUrl.trim()) || ''}
+              onScrapingComplete={handleScrapingComplete}
+              onScrapingError={handleScrapingError}
+              autoStart={true}
+            />
+          )}
 
         {/* Profile Analysis Results */}
         {profileData && !isLoading && !showScrapingManager && (
@@ -2038,6 +2193,7 @@ function App() {
         )}
       </div>
     </div>
+    </ErrorBoundary>
   )
 }
 
