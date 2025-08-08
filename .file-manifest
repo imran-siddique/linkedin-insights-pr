@@ -51,6 +51,7 @@ src/main.tsx
 src/prd.md
 src/types/linkedin.ts
 start-dev.sh
+test-build.js
 vercel.json
 vite-env.d.ts
 vite.config.ts
