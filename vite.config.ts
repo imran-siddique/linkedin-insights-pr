@@ -1,4 +1,3 @@
-import tailwindcss from "@tailwindcss/vite"
 import react from "@vitejs/plugin-react"
 import { defineConfig, PluginOption } from "vite"
 import { resolve } from 'path'
@@ -16,7 +15,6 @@ export default defineConfig(({ command, mode }) => {
   return {
     plugins: [
       react(),
-      tailwindcss(),
       // DO NOT REMOVE
       createIconImportProxy() as PluginOption,
       sparkPlugin() as PluginOption,
@@ -35,39 +33,13 @@ export default defineConfig(({ command, mode }) => {
       sourcemap: isDev || process.env.VITE_SOURCE_MAP === 'true',
       target: 'esnext',
       
-      // Better chunk splitting for caching
+      // Simplified rollup options to avoid issues
       rollupOptions: {
         external: (id) => {
           // Don't try to bundle spark runtime dependencies
           return id.includes('@github/spark')
-        },
-        output: {
-          // Optimize chunk splitting
-          manualChunks: isProd ? {
-            // Separate vendor chunks for better caching
-            'react-vendor': ['react', 'react-dom'],
-            'ui-vendor': ['@radix-ui/react-accordion', '@radix-ui/react-alert-dialog', '@radix-ui/react-checkbox', '@radix-ui/react-dialog', '@radix-ui/react-label', '@radix-ui/react-popover', '@radix-ui/react-progress', '@radix-ui/react-select', '@radix-ui/react-separator', '@radix-ui/react-slot', '@radix-ui/react-tabs', '@radix-ui/react-toast'],
-            'icons-vendor': ['@phosphor-icons/react'],
-            'utils-vendor': ['clsx', 'class-variance-authority', 'tailwind-merge'],
-          } : undefined,
-          // Add hashes to filenames for better caching
-          chunkFileNames: isProd ? '[name].[hash].js' : '[name].js',
-          entryFileNames: isProd ? '[name].[hash].js' : '[name].js',
-          assetFileNames: isProd ? '[name].[hash].[ext]' : '[name].[ext]',
         }
       },
-      
-      // Terser options for production
-      terserOptions: isProd ? {
-        compress: {
-          drop_console: true, // Remove console.log in production
-          drop_debugger: true,
-          pure_funcs: ['console.log', 'console.debug', 'console.info'],
-        },
-        mangle: {
-          safari10: true,
-        },
-      } : undefined,
       
       // Build size warnings
       chunkSizeWarningLimit: 1000, // KB
@@ -75,12 +47,10 @@ export default defineConfig(({ command, mode }) => {
     
     // Development server configuration
     server: {
-      host: true, // Allow external connections
+      host: true,
       port: 5173,
       strictPort: false,
-      // Enable CORS for development
       cors: true,
-      // Hot module replacement
       hmr: {
         overlay: isDev
       }

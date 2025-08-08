@@ -1,5 +1,6 @@
-@import 'tailwindcss';
-@import "tw-animate-css";
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
 
 @layer base {
   * {
@@ -13,61 +14,34 @@
 
 :root {
   /* LinkedIn Analytics Theme - Professional Blue & Orange */
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.45 0.15 250);
+  --background: 0 0% 100%;
+  --foreground: 250 15% 45%;
   
-  --card: oklch(0.98 0 0);
-  --card-foreground: oklch(0.45 0.15 250);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.45 0.15 250);
+  --card: 0 0% 98%;
+  --card-foreground: 250 15% 45%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 250 15% 45%;
   
-  --primary: oklch(0.45 0.15 250);
-  --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.95 0 0);
-  --secondary-foreground: oklch(0.45 0.15 250);
-  --accent: oklch(0.7 0.15 50);
-  --accent-foreground: oklch(1 0 0);
+  --primary: 250 15% 45%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 0 0% 95%;
+  --secondary-foreground: 250 15% 45%;
+  --accent: 50 15% 70%;
+  --accent-foreground: 0 0% 100%;
   
-  --muted: oklch(0.95 0 0);
-  --muted-foreground: oklch(0.6 0 0);
-  --border: oklch(0.9 0 0);
-  --input: oklch(0.9 0 0);
-  --ring: oklch(0.45 0.15 250);
+  --muted: 0 0% 95%;
+  --muted-foreground: 0 0% 60%;
+  --border: 0 0% 90%;
+  --input: 0 0% 90%;
+  --ring: 250 15% 45%;
   
-  --destructive: oklch(0.6 0.2 25);
-  --destructive-foreground: oklch(1 0 0);
+  --destructive: 25 20% 60%;
+  --destructive-foreground: 0 0% 100%;
   
   --radius: 0.5rem;
 }
 
-@theme {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
-  --color-destructive-foreground: var(--destructive-foreground);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
-  
-  --radius-sm: calc(var(--radius) * 0.5);
-  --radius-md: var(--radius);
-  --radius-lg: calc(var(--radius) * 1.5);
-  --radius-xl: calc(var(--radius) * 2);
-  --radius-2xl: calc(var(--radius) * 3);
-  --radius-full: 9999px;
-}
+
 
 .animate-counter {
   animation: counter-up 2s ease-out forwards;
