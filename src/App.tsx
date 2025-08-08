@@ -47,6 +47,7 @@ import {
 } from '@phosphor-icons/react'
 import { useKV } from '@github/spark/hooks'
 import { toast } from 'sonner'
+import { Toaster } from '@/components/ui/sonner'
 import { linkedInService } from '@/lib/linkedin-api'
 import { linkedInScraper } from '@/lib/linkedin-scraper'
 import ScrapingManager from '@/components/ScrapingManager'
@@ -2189,6 +2190,7 @@ function App() {
         )}
       </div>
     </div>
+    <Toaster />
     </ErrorBoundary>
   )
 }

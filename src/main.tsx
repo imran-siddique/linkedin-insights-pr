@@ -2,7 +2,7 @@ import { createRoot } from 'react-dom/client'
 import { ErrorBoundary } from "react-error-boundary"
 import "@github/spark/spark"
 
-import App from './App.working.tsx'
+import App from './App.tsx'
 import { ErrorFallback } from './ErrorFallback.tsx'
 // TODO: Temporarily commented out complex imports to resolve Vite dependency issue
 // import { setupGlobalErrorHandling, errorService } from './lib/errorHandling'
