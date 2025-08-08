@@ -43,9 +43,11 @@ src/lib/linkedin-scraper.ts
 src/lib/monitoring.ts
 src/lib/optimization.ts
 src/lib/security.ts
+src/lib/skills-analysis.ts
 src/lib/utils.ts
 src/main.simple.tsx
 src/main.tsx
+src/prd.md
 src/types/linkedin.ts
 start-dev.sh
 vercel.json
