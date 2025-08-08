@@ -26,6 +26,7 @@ src/App.tsx
 src/ErrorFallback.tsx
 src/components/ScrapingManager.tsx
 src/components/ui/sonner.tsx
+src/hooks/useKV.ts
 src/hooks/useLinkedInScraper.ts
 src/index.css
 src/lib/cache.ts
@@ -35,6 +36,7 @@ src/lib/linkedin-api.ts
 src/lib/linkedin-scraper.ts
 src/lib/monitoring.ts
 src/lib/security.ts
+src/lib/utils.ts
 src/main.tsx
 src/types/linkedin.ts
 start-dev.sh

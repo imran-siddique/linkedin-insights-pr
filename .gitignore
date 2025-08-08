@@ -94,14 +94,3 @@ temp/
 
 # OS generated files
 Thumbs.db
-
-# Development backup files
-*.backup
-*.bak
-*.tmp
-*.test.*
-
-# Development components (avoid accidental commits)
-src/**/*.dev.*
-src/**/*.draft.*
-src/**/*.backup.*

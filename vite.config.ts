@@ -1,62 +1,106 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
+import tailwindcss from "@tailwindcss/vite"
+import react from "@vitejs/plugin-react"
+import { defineConfig, PluginOption } from "vite"
 import { resolve } from 'path'
 
-// https://vitejs.dev/config/
-export default defineConfig({
-  plugins: [react()],
-  resolve: {
-    alias: {
-      '@': resolve(__dirname, './src'),
-    },
-  },
-  build: {
-    outDir: 'dist',
-    assetsDir: 'assets',
-    sourcemap: false,
-    minify: 'terser',
-    cssMinify: true,
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          vendor: ['react', 'react-dom'],
-          ui: ['@phosphor-icons/react', 'sonner', 'framer-motion'],
-        },
-        chunkFileNames: 'assets/[name]-[hash].js',
-        entryFileNames: 'assets/[name]-[hash].js',
-        assetFileNames: 'assets/[name]-[hash].[ext]'
+import sparkPlugin from "@github/spark/spark-vite-plugin"
+import createIconImportProxy from "@github/spark/vitePhosphorIconProxyPlugin"
+
+const projectRoot = process.env.PROJECT_ROOT || import.meta.dirname
+
+// https://vite.dev/config/
+export default defineConfig(({ command, mode }) => {
+  const isDev = command === 'serve'
+  const isProd = mode === 'production'
+
+  return {
+    plugins: [
+      react(),
+      tailwindcss(),
+      // DO NOT REMOVE
+      createIconImportProxy() as PluginOption,
+      sparkPlugin() as PluginOption,
+    ],
+    resolve: {
+      alias: {
+        '@': resolve(projectRoot, 'src')
       }
     },
-    terserOptions: {
-      compress: {
-        drop_console: true,
-        drop_debugger: true,
-      },
+    optimizeDeps: {
+      exclude: ['@github/spark']
     },
-    reportCompressedSize: false,
-    chunkSizeWarningLimit: 1000,
-  },
-  server: {
-    port: 5173,
-    host: true,
-    strictPort: true,
-  },
-  preview: {
-    port: 4173,
-    host: true,
-  },
-  define: {
-    __APP_VERSION__: JSON.stringify(process.env.npm_package_version),
-    __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
-  },
-  optimizeDeps: {
-    include: [
-      'react',
-      'react-dom',
-      '@phosphor-icons/react',
-      'sonner',
-      'framer-motion',
-      'react-error-boundary'
-    ],
-  },
+    build: {
+      // Production optimization
+      minify: isProd ? 'terser' : false,
+      sourcemap: isDev || process.env.VITE_SOURCE_MAP === 'true',
+      target: 'esnext',
+      
+      // Better chunk splitting for caching
+      rollupOptions: {
+        external: (id) => {
+          // Don't try to bundle spark runtime dependencies
+          return id.includes('@github/spark')
+        },
+        output: {
+          // Optimize chunk splitting
+          manualChunks: isProd ? {
+            // Separate vendor chunks for better caching
+            'react-vendor': ['react', 'react-dom'],
+            'ui-vendor': ['@radix-ui/react-accordion', '@radix-ui/react-alert-dialog', '@radix-ui/react-checkbox', '@radix-ui/react-dialog', '@radix-ui/react-label', '@radix-ui/react-popover', '@radix-ui/react-progress', '@radix-ui/react-select', '@radix-ui/react-separator', '@radix-ui/react-slot', '@radix-ui/react-tabs', '@radix-ui/react-toast'],
+            'icons-vendor': ['@phosphor-icons/react'],
+            'utils-vendor': ['clsx', 'class-variance-authority', 'tailwind-merge'],
+          } : undefined,
+          // Add hashes to filenames for better caching
+          chunkFileNames: isProd ? '[name].[hash].js' : '[name].js',
+          entryFileNames: isProd ? '[name].[hash].js' : '[name].js',
+          assetFileNames: isProd ? '[name].[hash].[ext]' : '[name].[ext]',
+        }
+      },
+      
+      // Terser options for production
+      terserOptions: isProd ? {
+        compress: {
+          drop_console: true, // Remove console.log in production
+          drop_debugger: true,
+          pure_funcs: ['console.log', 'console.debug', 'console.info'],
+        },
+        mangle: {
+          safari10: true,
+        },
+      } : undefined,
+      
+      // Build size warnings
+      chunkSizeWarningLimit: 1000, // KB
+    },
+    
+    // Development server configuration
+    server: {
+      host: true, // Allow external connections
+      port: 5173,
+      strictPort: false,
+      // Enable CORS for development
+      cors: true,
+      // Hot module replacement
+      hmr: {
+        overlay: isDev
+      }
+    },
+    
+    // Preview server (for production builds)
+    preview: {
+      host: true,
+      port: 4173,
+      strictPort: false,
+      cors: true
+    },
+    
+    // Environment variable prefix
+    envPrefix: ['VITE_', 'NODE_'],
+    
+    // Define global constants
+    define: {
+      __APP_VERSION__: JSON.stringify(process.env.npm_package_version || '1.0.0'),
+      __BUILD_DATE__: JSON.stringify(new Date().toISOString()),
+    }
+  }
 })
