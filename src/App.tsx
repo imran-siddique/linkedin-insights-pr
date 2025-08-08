@@ -75,13 +75,13 @@ import {
   Activity,
   Clock
 } from '@phosphor-icons/react'
-import { useKV } from '@/hooks/useKV'
+import { useKV } from '@github/spark/hooks'
 import { toast } from 'sonner'
 import { Toaster } from '@/components/ui/sonner'
 import { linkedInService } from '@/lib/linkedin-api'
 import { skillsAnalysisService } from '@/lib/skills-analysis'
 import ScrapingManager from '@/components/ScrapingManager'
-import { ErrorFallback } from '@/ErrorFallback'
+import { ErrorFallback } from './ErrorFallback'
 import { CONFIG } from '@/lib/config'
 import { errorService, safeAsync, setupGlobalErrorHandling } from '@/lib/errorHandling'
 import { validation, security, performance } from '@/lib/security'
