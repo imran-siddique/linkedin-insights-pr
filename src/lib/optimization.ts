@@ -12,7 +12,7 @@ import { errorService } from './errorHandling'
 export class ResourceManager {
   private static instance: ResourceManager
   private observers: IntersectionObserver[] = []
-  private timers: NodeJS.Timeout[] = []
+  private timers: number[] = []
   private eventListeners: Array<{ element: EventTarget; event: string; handler: EventListener }> = []
   private isCleaningUp = false
 
@@ -35,7 +35,7 @@ export class ResourceManager {
   /**
    * Create and track a timer
    */
-  createTimer(callback: () => void, delay: number, isInterval = false): NodeJS.Timeout {
+  createTimer(callback: () => void, delay: number, isInterval = false): number {
     const timer = isInterval ? setInterval(callback, delay) : setTimeout(callback, delay)
     this.timers.push(timer)
     return timer

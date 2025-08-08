@@ -33,14 +33,6 @@ export default defineConfig(({ command, mode }) => {
       sourcemap: isDev || process.env.VITE_SOURCE_MAP === 'true',
       target: 'esnext',
       
-      // Simplified rollup options to avoid issues
-      rollupOptions: {
-        external: (id) => {
-          // Don't try to bundle spark runtime dependencies
-          return id.includes('@github/spark')
-        }
-      },
-      
       // Build size warnings
       chunkSizeWarningLimit: 1000, // KB
     },
