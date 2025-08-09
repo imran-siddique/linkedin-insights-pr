@@ -99,12 +99,10 @@ src/test/types.test.ts
 src/test/useProfileAnalysis.test.tsx
 src/types/linkedin.ts
 start-dev.sh
-tailwind.config.js
 test-basic.js
 test-build.js
 test-build.simple.js
 test-runner.ts
-tsconfig.json
 validate-build.js
 vercel.json
 vite-env.d.ts
