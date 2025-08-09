@@ -16,7 +16,7 @@ import {
   Shield,
   Globe,
   Cpu,
-  Activity,
+  CircleNotch,
   Timer,
   Database,
   TrendUp,
@@ -260,7 +260,7 @@ export function ScrapingManager({
                 <Progress value={progress} className={`w-full ${getProgressColor()}`} />
                 {currentStage && (
                   <p className="text-sm text-muted-foreground flex items-center">
-                    <Activity className="h-4 w-4 mr-2 animate-spin" />
+                    <CircleNotch className="h-4 w-4 mr-2 animate-spin" />
                     {currentStage}
                   </p>
                 )}

@@ -1,7 +1,7 @@
 import React from 'react'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Users, Activity, TrendUp, TrendDown, Equals, Sparkle } from '@phosphor-icons/react'
+import { Users, CircleNotch, TrendUp, TrendDown, Equals, Sparkle } from '@phosphor-icons/react'
 import type { ProfileData } from '@/types/linkedin'
 
 interface ProfileSummaryProps {
@@ -127,7 +127,7 @@ export function ProfileSummary({ profileData }: ProfileSummaryProps) {
             <div className="space-y-3">
               <div className="flex items-center space-x-3">
                 <div className="p-2 bg-green-100 rounded-lg">
-                  <Activity className="h-4 w-4 text-green-600" />
+                  <CircleNotch className="h-4 w-4 text-green-600" />
                 </div>
                 <div>
                   <p className="text-lg font-semibold text-foreground capitalize">

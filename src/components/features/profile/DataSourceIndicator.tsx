@@ -1,7 +1,7 @@
 import React from 'react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Globe, Shield, Activity, Clock } from '@phosphor-icons/react'
+import { Globe, Shield, CircleNotch, Clock } from '@phosphor-icons/react'
 import type { ProfileData, ScrapingResult } from '@/types/linkedin'
 
 interface DataSourceIndicatorProps {
@@ -35,7 +35,7 @@ export function DataSourceIndicator({ scrapingResult, profileData }: DataSourceI
             
             {profileData.dataFreshness && (
               <div className="flex items-center space-x-2">
-                <Activity className="h-4 w-4 text-blue-600" />
+                <CircleNotch className="h-4 w-4 text-blue-600" />
                 <span className="text-sm font-medium">Freshness:</span>
                 <Badge variant="secondary" className="capitalize">
                   {profileData.dataFreshness}
