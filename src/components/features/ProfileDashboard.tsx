@@ -7,6 +7,7 @@ import { MetricCards } from './profile/MetricCards'
 import { SkillsOverview } from './profile/SkillsOverview'
 import { FollowerBenchmarkCard } from './profile/FollowerBenchmarkCard'
 import { AnalysisTabs } from './analysis/AnalysisTabs'
+import { StaggerContainer, StaggerItem } from '@/components/ui/animated-container'
 import type {
   ProfileData,
   ScrapingResult,
@@ -49,37 +50,53 @@ export function ProfileDashboard({
   skillsAnalysis
 }: ProfileDashboardProps) {
   return (
-    <div className="space-y-8">
+    <StaggerContainer stagger={0.15} className="space-y-12">
       {/* Data Source & Quality Indicator */}
-      <DataSourceIndicator scrapingResult={scrapingResult} profileData={profileData} />
+      <StaggerItem>
+        <DataSourceIndicator scrapingResult={scrapingResult} profileData={profileData} />
+      </StaggerItem>
 
       {/* Profile Summary & Role Analysis */}
-      <ProfileSummary profileData={profileData} />
+      <StaggerItem>
+        <ProfileSummary profileData={profileData} />
+      </StaggerItem>
       
       {/* Profile Insights */}
-      <ProfileInsightsCards profileInsights={profileInsights} />
+      <StaggerItem>
+        <ProfileInsightsCards profileInsights={profileInsights} />
+      </StaggerItem>
 
       {/* Activity Metrics */}
-      <ActivityMetricsCard activityMetrics={activityMetrics} />
+      <StaggerItem>
+        <ActivityMetricsCard activityMetrics={activityMetrics} />
+      </StaggerItem>
 
       {/* Main Metrics & Profile Score */}
-      <MetricCards profileData={profileData} />
+      <StaggerItem>
+        <MetricCards profileData={profileData} />
+      </StaggerItem>
 
       {/* Skills Overview */}
-      <SkillsOverview profileData={profileData} />
+      <StaggerItem>
+        <SkillsOverview profileData={profileData} />
+      </StaggerItem>
 
       {/* Follower Benchmark Context */}
-      <FollowerBenchmarkCard profileData={profileData} scrapingResult={scrapingResult} />
+      <StaggerItem>
+        <FollowerBenchmarkCard profileData={profileData} scrapingResult={scrapingResult} />
+      </StaggerItem>
 
       {/* Analysis Tabs */}
-      <AnalysisTabs
-        recommendations={recommendations}
-        trendingTopics={trendingTopics}
-        skillInsights={skillInsights}
-        competitiveAnalysis={competitiveAnalysis}
-        compensationAnalysis={compensationAnalysis}
-        skillsAnalysis={skillsAnalysis}
-      />
-    </div>
+      <StaggerItem>
+        <AnalysisTabs
+          recommendations={recommendations}
+          trendingTopics={trendingTopics}
+          skillInsights={skillInsights}
+          competitiveAnalysis={competitiveAnalysis}
+          compensationAnalysis={compensationAnalysis}
+          skillsAnalysis={skillsAnalysis}
+        />
+      </StaggerItem>
+    </StaggerContainer>
   )
 }

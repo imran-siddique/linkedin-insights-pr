@@ -1,7 +1,7 @@
 import React from 'react'
-import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Users, Activity, TrendUp, TrendDown, Equals } from '@phosphor-icons/react'
+import { Users, Activity, TrendUp, TrendDown, Equals, Sparkle } from '@phosphor-icons/react'
+import { GlassCard } from '@/components/ui/glass-card'
 import type { ProfileData } from '@/types/linkedin'
 
 interface ProfileSummaryProps {
@@ -11,63 +11,144 @@ interface ProfileSummaryProps {
 export function ProfileSummary({ profileData }: ProfileSummaryProps) {
   if (!profileData.roleLevel) return null
 
+  const getTrendIcon = (trend: string) => {
+    switch (trend) {
+      case 'increasing':
+        return <TrendUp className="h-3 w-3 mr-1 text-green-600" />
+      case 'stable':
+        return <Equals className="h-3 w-3 mr-1 text-blue-600" />
+      default:
+        return <TrendDown className="h-3 w-3 mr-1 text-orange-600" />
+    }
+  }
+
+  const getTrendColor = (trend: string) => {
+    switch (trend) {
+      case 'increasing':
+        return 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100'
+      case 'stable':
+        return 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'
+      default:
+        return 'bg-orange-50 text-orange-700 border-orange-200 hover:bg-orange-100'
+    }
+  }
+
   return (
-    <Card className="border-l-4 border-l-accent">
-      <CardContent className="p-6">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="space-y-2">
-            <p className="text-sm font-medium text-muted-foreground">Professional Level</p>
-            <div className="flex items-center space-x-2">
-              <Badge variant="default" className="capitalize">
-                {profileData.roleLevel.replace('_', ' ')}
-              </Badge>
-              {profileData.experience && (
-                <Badge variant="outline">
-                  {profileData.experience} years exp.
-                </Badge>
-              )}
+    <GlassCard gradient className="relative overflow-hidden">
+      {/* Decorative elements */}
+      <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-primary/10 to-accent/10 rounded-full blur-3xl"></div>
+      <div className="absolute -top-16 -left-16 w-32 h-32 bg-gradient-to-br from-accent/10 to-primary/10 rounded-full blur-3xl"></div>
+      
+      <div className="p-8 relative z-10">
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center space-x-3">
+            <div className="p-2 bg-primary/10 rounded-xl">
+              <Sparkle className="h-6 w-6 text-primary" />
             </div>
-          </div>
-
-          <div className="space-y-2">
-            <p className="text-sm font-medium text-muted-foreground">Network Size</p>
-            <div className="flex items-center space-x-2">
-              <Users className="h-4 w-4 text-primary" />
-              <span className="font-semibold">
-                {profileData.followers.toLocaleString()} followers
-              </span>
-              {profileData.followerGrowthTrend && (
-                <Badge variant="outline" className={
-                  profileData.followerGrowthTrend === 'increasing' ? 'text-green-700 border-green-200' :
-                  profileData.followerGrowthTrend === 'stable' ? 'text-blue-700 border-blue-200' :
-                  'text-orange-700 border-orange-200'
-                }>
-                  {profileData.followerGrowthTrend === 'increasing' && <TrendUp className="h-3 w-3 mr-1" />}
-                  {profileData.followerGrowthTrend === 'stable' && <Equals className="h-3 w-3 mr-1" />}
-                  {profileData.followerGrowthTrend === 'decreasing' && <TrendDown className="h-3 w-3 mr-1" />}
-                  {profileData.followerGrowthTrend}
-                </Badge>
-              )}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Follower-to-connection ratio: {(profileData.followers / profileData.connections).toFixed(2)}x
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <p className="text-sm font-medium text-muted-foreground">Activity Level</p>
-            <div className="flex items-center space-x-2">
-              <Activity className="h-4 w-4 text-accent" />
-              <span className="font-semibold capitalize">
-                {profileData.contentFrequency || 'unknown'} poster
-              </span>
-              <Badge variant="secondary">
-                {profileData.engagement}% engagement
-              </Badge>
+            <div>
+              <h2 className="text-xl font-semibold text-foreground">Professional Overview</h2>
+              <p className="text-sm text-muted-foreground">Key profile metrics and growth indicators</p>
             </div>
           </div>
         </div>
-      </CardContent>
-    </Card>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {/* Professional Level */}
+          <div className="space-y-4">
+            <div className="flex items-center space-x-2">
+              <div className="w-2 h-2 bg-primary rounded-full"></div>
+              <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+                Professional Level
+              </p>
+            </div>
+            <div className="space-y-3">
+              <Badge 
+                variant="default" 
+                className="capitalize text-sm px-3 py-1 bg-primary/10 text-primary border-primary/20 hover:bg-primary/20"
+              >
+                {profileData.roleLevel.replace('_', ' ')}
+              </Badge>
+              {profileData.experience && (
+                <div className="flex items-center space-x-2">
+                  <Badge variant="outline" className="text-xs bg-white/50 border-muted">
+                    {profileData.experience} years experience
+                  </Badge>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Network Size */}
+          <div className="space-y-4">
+            <div className="flex items-center space-x-2">
+              <div className="w-2 h-2 bg-accent rounded-full"></div>
+              <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+                Network Size
+              </p>
+            </div>
+            <div className="space-y-3">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-accent/10 rounded-lg">
+                  <Users className="h-4 w-4 text-accent" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-foreground">
+                    {profileData.followers.toLocaleString()}
+                  </p>
+                  <p className="text-xs text-muted-foreground">followers</p>
+                </div>
+              </div>
+              
+              {profileData.followerGrowthTrend && (
+                <Badge 
+                  variant="outline" 
+                  className={`text-xs transition-colors ${getTrendColor(profileData.followerGrowthTrend)}`}
+                >
+                  {getTrendIcon(profileData.followerGrowthTrend)}
+                  {profileData.followerGrowthTrend}
+                </Badge>
+              )}
+              
+              <div className="text-xs text-muted-foreground bg-white/30 rounded-lg p-2">
+                <span className="font-medium">Connection ratio:</span> {' '}
+                {(profileData.followers / profileData.connections).toFixed(2)}x
+              </div>
+            </div>
+          </div>
+
+          {/* Activity Level */}
+          <div className="space-y-4">
+            <div className="flex items-center space-x-2">
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+              <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+                Activity Level
+              </p>
+            </div>
+            <div className="space-y-3">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-green-100 rounded-lg">
+                  <Activity className="h-4 w-4 text-green-600" />
+                </div>
+                <div>
+                  <p className="text-lg font-semibold text-foreground capitalize">
+                    {profileData.contentFrequency || 'Unknown'} poster
+                  </p>
+                  <p className="text-xs text-muted-foreground">content frequency</p>
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <Badge 
+                  variant="secondary" 
+                  className="bg-green-50 text-green-700 border-green-200 hover:bg-green-100"
+                >
+                  {profileData.engagement}% engagement rate
+                </Badge>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </GlassCard>
   )
 }

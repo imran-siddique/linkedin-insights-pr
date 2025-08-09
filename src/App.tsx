@@ -9,6 +9,7 @@ import { CONFIG } from '@/lib/config'
 import { errorService, setupGlobalErrorHandling } from '@/lib/errorHandling'
 import { Badge } from '@/components/ui/badge'
 import { AppHeader } from '@/components/layout/AppHeader'
+import { motion } from 'framer-motion'
 
 function App() {
   const {
@@ -62,37 +63,60 @@ function App() {
       onError={handleErrorBoundaryError}
       onReset={handleErrorBoundaryReset}
     >
-      <div className="min-h-screen bg-background">
-        <div className="container mx-auto px-4 py-8 max-w-6xl">
-          
-          <AppHeader />
-          
-          <ProfileAnalysisForm
-            onAnalyze={analyzeProfile}
-            isLoading={isLoading}
-            error={error}
-            analysisStage={analysisStage}
-            showScrapingManager={showScrapingManager}
-            onScrapingComplete={handleScrapingComplete}
-            onScrapingError={handleScrapingError}
-          />
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/30">
+        {/* Background Pattern */}
+        <div className="fixed inset-0 bg-[radial-gradient(circle_at_1px_1px,rgb(var(--muted-foreground)_/_0.15)_1px,transparent_0)] [background-size:32px_32px] pointer-events-none" />
+        
+        <div className="relative z-10">
+          <div className="container mx-auto px-4 py-12 max-w-7xl">
+            
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+            >
+              <AppHeader />
+            </motion.div>
+            
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+            >
+              <ProfileAnalysisForm
+                onAnalyze={analyzeProfile}
+                isLoading={isLoading}
+                error={error}
+                analysisStage={analysisStage}
+                showScrapingManager={showScrapingManager}
+                onScrapingComplete={handleScrapingComplete}
+                onScrapingError={handleScrapingError}
+              />
+            </motion.div>
 
-          {hasProfileData && (
-            <ProfileDashboard
-              profileData={profileData}
-              scrapingResult={scrapingResult}
-              recommendations={recommendations}
-              trendingTopics={trendingTopics}
-              skillInsights={skillInsights}
-              profileInsights={profileInsights}
-              activityMetrics={activityMetrics}
-              visualBranding={visualBranding}
-              competitiveAnalysis={competitiveAnalysis}
-              compensationAnalysis={compensationAnalysis}
-              skillsAnalysis={skillsAnalysis}
-            />
-          )}
+            {hasProfileData && (
+              <motion.div
+                initial={{ opacity: 0, y: 40 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.2 }}
+              >
+                <ProfileDashboard
+                  profileData={profileData}
+                  scrapingResult={scrapingResult}
+                  recommendations={recommendations}
+                  trendingTopics={trendingTopics}
+                  skillInsights={skillInsights}
+                  profileInsights={profileInsights}
+                  activityMetrics={activityMetrics}
+                  visualBranding={visualBranding}
+                  competitiveAnalysis={competitiveAnalysis}
+                  compensationAnalysis={compensationAnalysis}
+                  skillsAnalysis={skillsAnalysis}
+                />
+              </motion.div>
+            )}
 
+          </div>
         </div>
       </div>
       <Toaster />
