@@ -12,6 +12,7 @@ BUILD_FIX_SUMMARY.md
 CLEANUP_REPORT.md
 DEPLOYMENT.md
 DEPLOYMENT_CHECKLIST.md
+ERROR_FIX_SUMMARY.md
 ERROR_RESOLUTION.md
 PRD.md
 PRODUCTION_IMPROVEMENTS.md
@@ -66,6 +67,7 @@ src/test/skills-analysis.test.ts
 src/test/types.test.ts
 src/types/linkedin.ts
 start-dev.sh
+tailwind.config.js
 test-build.js
 test-build.simple.js
 test-runner.ts
