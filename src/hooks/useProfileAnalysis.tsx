@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react'
 import { toast } from 'sonner'
-import { useKV } from '@/hooks/useKV'
+import { useKV } from '@github/spark/hooks'
 import { linkedInService } from '@/lib/linkedin-api'
 import { skillsAnalysisService } from '@/lib/skills-analysis'
 import { errorService, safeAsync } from '@/lib/errorHandling'
