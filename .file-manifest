@@ -45,13 +45,16 @@ src/lib/monitoring.ts
 src/lib/security.ts
 src/lib/skills-analysis.ts
 src/lib/utils.ts
+src/main.css
 src/main.simple.tsx
 src/main.tsx
 src/prd.md
 src/types/linkedin.ts
 start-dev.sh
+tailwind.config.js
 test-build.js
 test-build.simple.js
+validate-build.js
 vercel.json
 vite-env.d.ts
 vite.config.ts

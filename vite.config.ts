@@ -1,6 +1,10 @@
+import tailwindcss from "@tailwindcss/vite"
 import react from "@vitejs/plugin-react"
-import { defineConfig } from "vite"
+import { defineConfig, PluginOption } from "vite"
 import { resolve } from 'path'
+
+import sparkPlugin from "@github/spark/spark-vite-plugin"
+import createIconImportProxy from "@github/spark/vitePhosphorIconProxyPlugin"
 
 const projectRoot = process.env.PROJECT_ROOT || import.meta.dirname
 
@@ -12,11 +16,18 @@ export default defineConfig(({ command, mode }) => {
   return {
     plugins: [
       react(),
+      tailwindcss(),
+      // DO NOT REMOVE
+      createIconImportProxy() as PluginOption,
+      sparkPlugin() as PluginOption,
     ],
     resolve: {
       alias: {
         '@': resolve(projectRoot, 'src')
       }
+    },
+    optimizeDeps: {
+      exclude: ['@github/spark']
     },
     build: {
       // Production optimization
@@ -26,6 +37,10 @@ export default defineConfig(({ command, mode }) => {
       
       // Better chunk splitting for caching
       rollupOptions: {
+        external: (id) => {
+          // Don't try to bundle spark runtime dependencies
+          return id.includes('@github/spark')
+        },
         output: {
           // Optimize chunk splitting
           manualChunks: isProd ? {
