@@ -1,6 +1,5 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { toast } from 'sonner'
-import { useKV } from '@github/spark/hooks'
 import { linkedInService } from '@/lib/linkedin-api'
 import { skillsAnalysisService } from '@/lib/skills-analysis'
 import { errorService, safeAsync } from '@/lib/errorHandling'
@@ -51,18 +50,49 @@ const spark = (typeof window !== 'undefined' && window.spark) || {
   }
 }
 
+// Local useKV implementation
+function useLocalKV<T>(key: string, defaultValue: T): [T, (value: T | ((prev: T) => T)) => void, () => void] {
+  const [value, setValue] = useState<T>(defaultValue)
+
+  // Load initial value
+  useEffect(() => {
+    spark.kv.get<T>(key).then(stored => {
+      if (stored !== undefined) {
+        setValue(stored)
+      }
+    }).catch(console.error)
+  }, [key])
+
+  // Update function
+  const updateValue = useCallback((newValue: T | ((prev: T) => T)) => {
+    setValue(prev => {
+      const resolved = typeof newValue === 'function' ? (newValue as (prev: T) => T)(prev) : newValue
+      spark.kv.set(key, resolved).catch(console.error)
+      return resolved
+    })
+  }, [key])
+
+  // Delete function
+  const deleteValue = useCallback(() => {
+    setValue(defaultValue)
+    spark.kv.delete(key).catch(console.error)
+  }, [key, defaultValue])
+
+  return [value, updateValue, deleteValue]
+}
+
 export function useProfileAnalysis() {
-  const [profileData, setProfileData] = useKV<ProfileData | null>('profile-data', null)
-  const [recommendations, setRecommendations] = useKV<Recommendation[]>('recommendations', [])
-  const [trendingTopics, setTrendingTopics] = useKV<TrendingTopic[]>('trending-topics', [])
-  const [skillInsights, setSkillInsights] = useKV<SkillInsight[]>('skill-insights', [])
-  const [profileInsights, setProfileInsights] = useKV<ProfileInsights | null>('profile-insights', null)
-  const [activityMetrics, setActivityMetrics] = useKV<ActivityMetrics | null>('activity-metrics', null)
-  const [visualBranding, setVisualBranding] = useKV<VisualBrandingAnalysis | null>('visual-branding', null)
-  const [competitiveAnalysis, setCompetitiveAnalysis] = useKV<CompetitiveAnalysis | null>('competitive-analysis', null)
-  const [compensationAnalysis, setCompensationAnalysis] = useKV<CompensationAnalysis | null>('compensation-analysis', null)
-  const [skillsAnalysis, setSkillsAnalysis] = useKV<SkillAnalysis | null>('skills-analysis', null)
-  const [lastAnalysisTime, setLastAnalysisTime] = useKV<number | null>('last-analysis-time', null)
+  const [profileData, setProfileData] = useLocalKV<ProfileData | null>('profile-data', null)
+  const [recommendations, setRecommendations] = useLocalKV<Recommendation[]>('recommendations', [])
+  const [trendingTopics, setTrendingTopics] = useLocalKV<TrendingTopic[]>('trending-topics', [])
+  const [skillInsights, setSkillInsights] = useLocalKV<SkillInsight[]>('skill-insights', [])
+  const [profileInsights, setProfileInsights] = useLocalKV<ProfileInsights | null>('profile-insights', null)
+  const [activityMetrics, setActivityMetrics] = useLocalKV<ActivityMetrics | null>('activity-metrics', null)
+  const [visualBranding, setVisualBranding] = useLocalKV<VisualBrandingAnalysis | null>('visual-branding', null)
+  const [competitiveAnalysis, setCompetitiveAnalysis] = useLocalKV<CompetitiveAnalysis | null>('competitive-analysis', null)
+  const [compensationAnalysis, setCompensationAnalysis] = useLocalKV<CompensationAnalysis | null>('compensation-analysis', null)
+  const [skillsAnalysis, setSkillsAnalysis] = useLocalKV<SkillAnalysis | null>('skills-analysis', null)
+  const [lastAnalysisTime, setLastAnalysisTime] = useLocalKV<number | null>('last-analysis-time', null)
 
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)

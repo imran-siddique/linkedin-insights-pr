@@ -24,7 +24,52 @@ import {
 } from '@phosphor-icons/react'
 import { ScrapingResult, ScrapingSession, ScrapingStats } from '@/types/linkedin'
 import { useLinkedInScraper } from '@/hooks/useLinkedInScraper'
-import { useKV } from '@github/spark/hooks'
+// Use direct spark.kv API instead of useKV hook
+
+// Global spark interface
+declare global {
+  interface Window {
+    spark: {
+      kv: {
+        get: <T>(key: string) => Promise<T | undefined>
+        set: <T>(key: string, value: T) => Promise<void>
+      }
+    }
+  }
+}
+
+// Access spark globally
+const spark = (typeof window !== 'undefined' && window.spark) || {
+  kv: {
+    get: async () => Promise.resolve(undefined),
+    set: async () => Promise.resolve()
+  }
+}
+
+// Local useKV implementation
+function useLocalKV<T>(key: string, defaultValue: T): [T, (value: T | ((prev: T) => T)) => void] {
+  const [value, setValue] = useState<T>(defaultValue)
+
+  // Load initial value
+  useEffect(() => {
+    spark.kv.get<T>(key).then(stored => {
+      if (stored !== undefined) {
+        setValue(stored)
+      }
+    }).catch(console.error)
+  }, [key])
+
+  // Update function
+  const updateValue = useCallback((newValue: T | ((prev: T) => T)) => {
+    setValue(prev => {
+      const resolved = typeof newValue === 'function' ? (newValue as (prev: T) => T)(prev) : newValue
+      spark.kv.set(key, resolved).catch(console.error)
+      return resolved
+    })
+  }, [key])
+
+  return [value, updateValue]
+}
 
 interface ScrapingManagerProps {
   identifier: string
@@ -49,7 +94,7 @@ export function ScrapingManager({
   
   const [progress, setProgress] = useState(0)
   const [currentStage, setCurrentStage] = useState<string>('')
-  const [scrapingStats, setScrapingStats] = useKV<ScrapingStats>('scraping-stats', {
+  const [scrapingStats, setScrapingStats] = useLocalKV<ScrapingStats>('scraping-stats', {
     totalRequests: 0,
     successfulScrapes: 0,
     failedScrapes: 0,
