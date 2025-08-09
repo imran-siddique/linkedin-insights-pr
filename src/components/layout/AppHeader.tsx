@@ -1,19 +1,19 @@
 import React from 'react'
+import { Badge } from '@/components/ui/badge'
 import { CONFIG } from '@/lib/config'
+
 export function AppHeader() {
-
+  return (
+    <div className="text-center mb-8">
+      <h1 className="text-4xl font-bold text-primary mb-3">
         {CONFIG.APP_NAME}
-      <p c
+      </h1>
+      <p className="text-lg text-muted-foreground mb-4">
+        Analyze your LinkedIn profile and get personalized growth recommendations
       </p>
+      {CONFIG.ENABLE_DEBUG_MODE && (
         <div className="mt-2">
-            v{CONFIG.APP_
-        </d
-    </div>
-}
-
-
-
-
+          <Badge variant="outline" className="text-xs">
             v{CONFIG.APP_VERSION} • Debug Mode
           </Badge>
         </div>

@@ -13,7 +13,7 @@ export default defineConfig({
     target: 'es2020',
     outDir: 'dist',
     sourcemap: false,
-    minify: 'esbuild'
+    minify: false
   },
   server: {
     port: 3000,

@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:minimal": "vite --config vite.config.minimal.ts",
     "build": "vite build",
+    "build:minimal": "vite build --config vite.config.minimal.ts",
     "build:analyze": "vite build --mode analyze",
     "preview": "vite preview",
     "preview:host": "vite preview --host",
@@ -17,6 +19,7 @@
     "test:coverage": "vitest run --coverage",
     "test:ui": "vitest --ui",
     "test:watch": "vitest --watch",
+    "test:basic": "node test-basic.js",
     "health-check": "node -e \"console.log('Health check passed')\"",
     "start": "npm run preview"
   },

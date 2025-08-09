@@ -15,58 +15,28 @@
 :root {
   /* LinkedIn Analytics Theme - Professional Blue & Orange */
   --background: 0 0% 100%;
-  --foreground: 250 15% 45%;
+  --foreground: 220 9% 46%;
   
   --card: 0 0% 98%;
-  --card-foreground: 250 15% 45%;
+  --card-foreground: 220 9% 46%;
   --popover: 0 0% 100%;
-  --popover-foreground: 250 15% 45%;
+  --popover-foreground: 220 9% 46%;
   
-  --primary: 250 15% 45%;
-  --primary-foreground: 0 0% 100%;
-  --secondary: 0 0% 95%;
-  --secondary-foreground: 250 15% 45%;
-  --accent: 50 15% 70%;
-  --accent-foreground: 0 0% 100%;
+  --primary: 220 13% 91%;
+  --primary-foreground: 220 9% 46%;
+  --secondary: 220 15% 95%;
+  --secondary-foreground: 220 9% 46%;
+  --accent: 210 40% 90%;
+  --accent-foreground: 220 9% 46%;
   
-  --muted: 0 0% 95%;
-  --muted-foreground: 0 0% 60%;
-  --border: 0 0% 90%;
-  --input: 0 0% 90%;
-  --ring: 250 15% 45%;
+  --muted: 220 13% 95%;
+  --muted-foreground: 220 9% 60%;
+  --border: 220 13% 91%;
+  --input: 220 13% 91%;
+  --ring: 220 9% 46%;
   
-  --destructive: 25 20% 60%;
+  --destructive: 0 84% 60%;
   --destructive-foreground: 0 0% 100%;
   
   --radius: 0.5rem;
-}
-
-@theme {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
-  --color-destructive-foreground: var(--destructive-foreground);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
-
-  /* Map radius variables to create a consistent rounding system */
-  --radius-sm: calc(var(--radius) * 0.5);
-  --radius-md: var(--radius);
-  --radius-lg: calc(var(--radius) * 1.5);
-  --radius-xl: calc(var(--radius) * 2);
-  --radius-2xl: calc(var(--radius) * 3);
-  --radius-full: 9999px;
 }
