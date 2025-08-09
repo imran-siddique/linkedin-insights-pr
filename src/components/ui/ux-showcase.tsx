@@ -11,7 +11,6 @@ import {
   CheckCircle,
   ArrowRight
 } from '@phosphor-icons/react'
-import { GlassCard } from '@/components/ui/glass-card'
 import { FloatingElement, GradientText } from '@/components/ui/effects'
 
 interface UXShowcaseProps {
@@ -88,7 +87,7 @@ export function UXShowcase({ className }: UXShowcaseProps) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: index * 0.1 }}
           >
-            <GlassCard className="group hover:shadow-2xl hover:scale-[1.02] transition-all duration-300">
+            <Card className="group hover:shadow-2xl hover:scale-[1.02] transition-all duration-300 bg-card/80 backdrop-blur-sm border-border/50">
               <CardContent className="p-6 space-y-4">
                 <div className="flex items-center space-x-4">
                   <div className={`p-3 rounded-xl bg-gradient-to-br ${feature.color} text-white`}>
@@ -105,7 +104,7 @@ export function UXShowcase({ className }: UXShowcaseProps) {
                   {feature.description}
                 </p>
               </CardContent>
-            </GlassCard>
+            </Card>
           </motion.div>
         ))}
       </div>
@@ -116,7 +115,7 @@ export function UXShowcase({ className }: UXShowcaseProps) {
         animate={{ opacity: 1 }}
         transition={{ duration: 0.8, delay: 0.4 }}
       >
-        <GlassCard gradient className="p-8">
+        <Card className="p-8 bg-gradient-to-br from-primary/5 to-accent/5 border-primary/20 backdrop-blur-sm">
           <div className="text-center mb-8">
             <h2 className="text-2xl font-semibold text-foreground mb-2">
               Enhanced User Experience
@@ -131,9 +130,9 @@ export function UXShowcase({ className }: UXShowcaseProps) {
               <div className="mx-auto w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
                 <CheckCircle className="h-6 w-6 text-green-600" />
               </div>
-              <h3 className="font-medium text-foreground">Glassmorphic Design</h3>
+              <h3 className="font-medium text-foreground">Modern Design</h3>
               <p className="text-sm text-muted-foreground">
-                Modern glass-like cards with backdrop blur effects for a contemporary feel
+                Clean card-based interface with subtle gradients for a contemporary feel
               </p>
             </div>
 
@@ -167,7 +166,7 @@ export function UXShowcase({ className }: UXShowcaseProps) {
               Built for Professional Growth
             </Badge>
           </div>
-        </GlassCard>
+        </Card>
       </motion.div>
     </div>
   )

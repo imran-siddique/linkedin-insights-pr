@@ -1,9 +1,8 @@
 import React from 'react'
-import { CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
 import { Users, ChatCircle, TrendUp, Target, ArrowUp, ArrowDown } from '@phosphor-icons/react'
-import { GlassCard } from '@/components/ui/glass-card'
 import { StaggerContainer, StaggerItem } from '@/components/ui/animated-container'
 import type { ProfileData } from '@/types/linkedin'
 
@@ -36,7 +35,7 @@ const MetricCard = ({
   }
 
   return (
-    <GlassCard className="relative overflow-hidden group hover:shadow-2xl transition-all duration-300">
+    <Card className="relative overflow-hidden group hover:shadow-2xl transition-all duration-300 bg-card/80 backdrop-blur-sm">
       {/* Background gradient */}
       <div className={`absolute inset-0 bg-gradient-to-br ${colorClasses[color].split(' ')[0]} ${colorClasses[color].split(' ')[1]} opacity-30 group-hover:opacity-50 transition-opacity`}></div>
       
@@ -75,7 +74,7 @@ const MetricCard = ({
           )}
         </div>
       </CardContent>
-    </GlassCard>
+    </Card>
   )
 }
 
@@ -151,7 +150,7 @@ export function MetricCards({ profileData }: MetricCardsProps) {
       <StaggerContainer>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <StaggerItem>
-            <GlassCard gradient className="relative overflow-hidden">
+            <Card className="relative overflow-hidden bg-gradient-to-br from-primary/5 to-accent/5 border-primary/20 backdrop-blur-sm">
               <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-primary/20 to-accent/20 rounded-full blur-2xl"></div>
               
               <CardHeader className="relative z-10 pb-4">
@@ -193,11 +192,11 @@ export function MetricCards({ profileData }: MetricCardsProps) {
                   </p>
                 </div>
               </CardContent>
-            </GlassCard>
+            </Card>
           </StaggerItem>
           
           <StaggerItem>
-            <GlassCard gradient className="flex items-center justify-center h-full">
+            <Card className="flex items-center justify-center h-full bg-gradient-to-br from-accent/5 to-primary/5 border-accent/20 backdrop-blur-sm">
               <div className="text-center space-y-4 p-8">
                 <div className="mx-auto w-16 h-16 bg-gradient-to-br from-accent/20 to-primary/20 rounded-2xl flex items-center justify-center">
                   <TrendUp className="h-8 w-8 text-primary" />
@@ -217,7 +216,7 @@ export function MetricCards({ profileData }: MetricCardsProps) {
                   </Badge>
                 </div>
               </div>
-            </GlassCard>
+            </Card>
           </StaggerItem>
         </div>
       </StaggerContainer>

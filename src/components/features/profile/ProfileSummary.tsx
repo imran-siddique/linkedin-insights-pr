@@ -1,7 +1,7 @@
 import React from 'react'
+import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Users, Activity, TrendUp, TrendDown, Equals, Sparkle } from '@phosphor-icons/react'
-import { GlassCard } from '@/components/ui/glass-card'
 import type { ProfileData } from '@/types/linkedin'
 
 interface ProfileSummaryProps {
@@ -34,7 +34,7 @@ export function ProfileSummary({ profileData }: ProfileSummaryProps) {
   }
 
   return (
-    <GlassCard gradient className="relative overflow-hidden">
+    <Card className="relative overflow-hidden bg-gradient-to-br from-primary/5 to-accent/5 border-primary/20 backdrop-blur-sm">
       {/* Decorative elements */}
       <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-primary/10 to-accent/10 rounded-full blur-3xl"></div>
       <div className="absolute -top-16 -left-16 w-32 h-32 bg-gradient-to-br from-accent/10 to-primary/10 rounded-full blur-3xl"></div>
@@ -149,6 +149,6 @@ export function ProfileSummary({ profileData }: ProfileSummaryProps) {
           </div>
         </div>
       </div>
-    </GlassCard>
+    </Card>
   )
 }
