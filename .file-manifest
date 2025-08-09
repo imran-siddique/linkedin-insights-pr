@@ -42,6 +42,7 @@ src/lib/errorHandling.ts
 src/lib/linkedin-api.ts
 src/lib/linkedin-scraper.ts
 src/lib/monitoring.ts
+src/lib/optimization.ts
 src/lib/security.ts
 src/lib/skills-analysis.ts
 src/lib/utils.ts
@@ -51,7 +52,6 @@ src/main.tsx
 src/prd.md
 src/types/linkedin.ts
 start-dev.sh
-tailwind.config.js
 test-build.js
 test-build.simple.js
 validate-build.js
