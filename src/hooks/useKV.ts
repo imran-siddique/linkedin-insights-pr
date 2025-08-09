@@ -1,9 +1,60 @@
 import { useState, useEffect, useCallback } from 'react'
 
+// Fallback KV implementation using localStorage
+const fallbackKV = {
+  async get<T>(key: string): Promise<T | undefined> {
+    try {
+      const item = localStorage.getItem(`kv-${key}`)
+      return item ? JSON.parse(item) : undefined
+    } catch {
+      return undefined
+    }
+  },
+
+  async set<T>(key: string, value: T): Promise<void> {
+    try {
+      localStorage.setItem(`kv-${key}`, JSON.stringify(value))
+    } catch (error) {
+      console.warn('Failed to save to localStorage:', error)
+    }
+  },
+
+  async delete(key: string): Promise<void> {
+    try {
+      localStorage.removeItem(`kv-${key}`)
+    } catch (error) {
+      console.warn('Failed to delete from localStorage:', error)
+    }
+  },
+
+  async keys(): Promise<string[]> {
+    try {
+      const keys = []
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i)
+        if (key?.startsWith('kv-')) {
+          keys.push(key.substring(3))
+        }
+      }
+      return keys
+    } catch {
+      return []
+    }
+  }
+}
+
+// Get KV implementation (prefer spark if available, fallback to localStorage)
+function getKV() {
+  if (typeof window !== 'undefined' && window.spark?.kv) {
+    return window.spark.kv
+  }
+  return fallbackKV
+}
+
 // Declare global spark interface
 declare global {
   interface Window {
-    spark: {
+    spark?: {
       kv: {
         keys: () => Promise<string[]>
         get: <T>(key: string) => Promise<T | undefined>
@@ -22,11 +73,10 @@ export function useKV<T>(key: string, defaultValue: T): [T, (value: T | ((prev: 
   useEffect(() => {
     const loadValue = async () => {
       try {
-        if (typeof window !== 'undefined' && window.spark?.kv) {
-          const stored = await window.spark.kv.get<T>(key)
-          if (stored !== undefined) {
-            setValue(stored)
-          }
+        const kv = getKV()
+        const stored = await kv.get<T>(key)
+        if (stored !== undefined) {
+          setValue(stored)
         }
       } catch (error) {
         console.warn(`Failed to load value for key "${key}":`, error)
@@ -44,9 +94,8 @@ export function useKV<T>(key: string, defaultValue: T): [T, (value: T | ((prev: 
       const valueToSet = typeof newValue === 'function' ? (newValue as (prev: T) => T)(value) : newValue
       setValue(valueToSet)
       
-      if (typeof window !== 'undefined' && window.spark?.kv) {
-        await window.spark.kv.set(key, valueToSet)
-      }
+      const kv = getKV()
+      await kv.set(key, valueToSet)
     } catch (error) {
       console.error(`Failed to set value for key "${key}":`, error)
     }
@@ -57,9 +106,8 @@ export function useKV<T>(key: string, defaultValue: T): [T, (value: T | ((prev: 
     try {
       setValue(defaultValue)
       
-      if (typeof window !== 'undefined' && window.spark?.kv) {
-        await window.spark.kv.delete(key)
-      }
+      const kv = getKV()
+      await kv.delete(key)
     } catch (error) {
       console.error(`Failed to delete value for key "${key}":`, error)
     }
