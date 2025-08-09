@@ -24,7 +24,7 @@ import {
 } from '@phosphor-icons/react'
 import { ScrapingResult, ScrapingSession, ScrapingStats } from '@/types/linkedin'
 import { useLinkedInScraper } from '@/hooks/useLinkedInScraper'
-import { useKV } from '../hooks/useKV'
+import { useKV } from '@/hooks/useKV'
 
 interface ScrapingManagerProps {
   identifier: string
