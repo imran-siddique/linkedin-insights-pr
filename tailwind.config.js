@@ -24,41 +24,6 @@ const defaultTheme = {
       pwa: { raw: "(display-mode: standalone)" },
     },
     colors: {
-      // Shadcn colors
-      border: "hsl(var(--border))",
-      input: "hsl(var(--input))",
-      ring: "hsl(var(--ring))",
-      background: "hsl(var(--background))",
-      foreground: "hsl(var(--foreground))",
-      primary: {
-        DEFAULT: "hsl(var(--primary))",
-        foreground: "hsl(var(--primary-foreground))",
-      },
-      secondary: {
-        DEFAULT: "hsl(var(--secondary))",
-        foreground: "hsl(var(--secondary-foreground))",
-      },
-      destructive: {
-        DEFAULT: "hsl(var(--destructive))",
-        foreground: "hsl(var(--destructive-foreground))",
-      },
-      muted: {
-        DEFAULT: "hsl(var(--muted))",
-        foreground: "hsl(var(--muted-foreground))",
-      },
-      accent: {
-        DEFAULT: "hsl(var(--accent))",
-        foreground: "hsl(var(--accent-foreground))",
-      },
-      popover: {
-        DEFAULT: "hsl(var(--popover))",
-        foreground: "hsl(var(--popover-foreground))",
-      },
-      card: {
-        DEFAULT: "hsl(var(--card))",
-        foreground: "hsl(var(--card-foreground))",
-      },
-      // Custom spark colors
       neutral: {
         1: "var(--color-neutral-1)",
         2: "var(--color-neutral-2)",
@@ -85,6 +50,36 @@ const defaultTheme = {
         a11: "var(--color-neutral-a11)",
         a12: "var(--color-neutral-a12)",
         contrast: "var(--color-neutral-contrast)",
+      },
+      accent: {
+        1: "var(--color-accent-1)",
+        2: "var(--color-accent-2)",
+        3: "var(--color-accent-3)",
+        4: "var(--color-accent-4)",
+        5: "var(--color-accent-5)",
+        6: "var(--color-accent-6)",
+        7: "var(--color-accent-7)",
+        8: "var(--color-accent-8)",
+        9: "var(--color-accent-9)",
+        10: "var(--color-accent-10)",
+        11: "var(--color-accent-11)",
+        12: "var(--color-accent-12)",
+        contrast: "var(--color-accent-contrast)",
+      },
+      "accent-secondary": {
+        1: "var(--color-accent-secondary-1)",
+        2: "var(--color-accent-secondary-2)",
+        3: "var(--color-accent-secondary-3)",
+        4: "var(--color-accent-secondary-4)",
+        5: "var(--color-accent-secondary-5)",
+        6: "var(--color-accent-secondary-6)",
+        7: "var(--color-accent-secondary-7)",
+        8: "var(--color-accent-secondary-8)",
+        9: "var(--color-accent-secondary-9)",
+        10: "var(--color-accent-secondary-10)",
+        11: "var(--color-accent-secondary-11)",
+        12: "var(--color-accent-secondary-12)",
+        contrast: "var(--color-accent-secondary-contrast)",
       },
       fg: {
         DEFAULT: "var(--color-fg)",

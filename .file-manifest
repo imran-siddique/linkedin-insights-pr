@@ -21,12 +21,14 @@ PRODUCTION_IMPROVEMENTS.md
 README.md
 TEST_IMPLEMENTATION_SUMMARY.md
 TEST_RESULTS.md
+VITE_FIX_SUMMARY.md
 build-test.sh
 deploy-aws.sh
 deploy-docker.sh
 deploy.sh
 docker-compose.yml
 index.html
+index.minimal.html
 netlify.toml
 nginx.conf
 package-lock.json
@@ -79,6 +81,7 @@ src/lib/security.ts
 src/lib/skills-analysis.ts
 src/lib/utils.ts
 src/main.css
+src/main.minimal.tsx
 src/main.simple.tsx
 src/main.tsx
 src/prd.md
@@ -97,6 +100,7 @@ src/test/useProfileAnalysis.test.tsx
 src/types/linkedin.ts
 start-dev.sh
 tailwind.config.js
+test-basic.js
 test-build.js
 test-build.simple.js
 test-runner.ts
@@ -104,5 +108,6 @@ tsconfig.json
 validate-build.js
 vercel.json
 vite-env.d.ts
+vite.config.minimal.ts
 vite.config.ts
 vitest.config.ts
