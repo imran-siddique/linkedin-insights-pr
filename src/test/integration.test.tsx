@@ -4,7 +4,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import App from '../App'
 
 // Mock all external dependencies
-vi.mock('@github/spark/hooks', () => ({
+vi.mock('@/hooks/useKV', () => ({
   useKV: vi.fn()
 }))
 
@@ -71,7 +71,7 @@ describe('App Integration Tests', () => {
     
     // Setup mock for useKV hook
     mockUseKV = vi.fn()
-    const { useKV } = vi.mocked(require('@github/spark/hooks'))
+    const { useKV } = vi.mocked(require('@/hooks/useKV'))
     useKV.mockImplementation(mockUseKV)
     
     // Default mock implementation

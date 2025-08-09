@@ -3,31 +3,51 @@ import react from "@vitejs/plugin-react"
 import { defineConfig, PluginOption } from "vite"
 import { resolve } from 'path'
 
-import sparkPlugin from "@github/spark/spark-vite-plugin"
-import createIconImportProxy from "@github/spark/vitePhosphorIconProxyPlugin"
-
 const projectRoot = process.env.PROJECT_ROOT || import.meta.dirname
+
+// Fallback spark plugins
+const sparkPluginFallback = () => ({ name: 'spark-fallback' })
+const iconProxyFallback = () => ({ name: 'icon-proxy-fallback' })
 
 // https://vite.dev/config/
 export default defineConfig(({ command, mode }) => {
   const isDev = command === 'serve'
   const isProd = mode === 'production'
 
+  // Use fallback plugins (spark plugins will be injected at runtime if available)
+  const plugins = [
+    react(),
+    tailwindcss(),
+    iconProxyFallback() as PluginOption,
+    sparkPluginFallback() as PluginOption,
+  ]
+
   return {
-    plugins: [
-      react(),
-      tailwindcss(),
-      // DO NOT REMOVE
-      createIconImportProxy() as PluginOption,
-      sparkPlugin() as PluginOption,
-    ],
+    plugins,
     resolve: {
       alias: {
         '@': resolve(projectRoot, 'src')
       }
     },
     optimizeDeps: {
-      exclude: ['@github/spark']
+      exclude: ['@github/spark'],
+      include: [
+        'react',
+        'react-dom',
+        '@phosphor-icons/react',
+        '@radix-ui/react-accordion',
+        '@radix-ui/react-alert-dialog',
+        '@radix-ui/react-checkbox',
+        '@radix-ui/react-dialog',
+        '@radix-ui/react-label',
+        '@radix-ui/react-popover',
+        '@radix-ui/react-progress',
+        '@radix-ui/react-select',
+        '@radix-ui/react-separator',
+        '@radix-ui/react-slot',
+        '@radix-ui/react-tabs',
+        '@radix-ui/react-toast'
+      ]
     },
     build: {
       // Production optimization

@@ -4,7 +4,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import App from '../App'
 
 // Mock the hooks
-vi.mock('@github/spark/hooks', () => ({
+vi.mock('@/hooks/useKV', () => ({
   useKV: vi.fn(() => [null, vi.fn(), vi.fn()])
 }))
 
@@ -256,7 +256,7 @@ describe('App Integration', () => {
     }
 
     // Mock the useKV hook to return mock data
-    const { useKV } = await import('@github/spark/hooks')
+    const { useKV } = await import('@/hooks/useKV')
     vi.mocked(useKV).mockImplementation((key) => {
       if (key === 'profile-data') {
         return [mockProfileData, vi.fn(), vi.fn()]

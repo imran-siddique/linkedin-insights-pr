@@ -75,7 +75,7 @@ import {
   Activity,
   Clock
 } from '@phosphor-icons/react'
-import { useKV } from '@github/spark/hooks'
+import { useKV } from '@/hooks/useKV'
 import { toast } from 'sonner'
 import { Toaster } from '@/components/ui/sonner'
 import { linkedInService } from '@/lib/linkedin-api'
