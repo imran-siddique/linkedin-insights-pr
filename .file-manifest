@@ -14,6 +14,7 @@ DEPLOYMENT.md
 DEPLOYMENT_CHECKLIST.md
 Dockerfile
 ERROR_FIX_DETAILED.md
+ERROR_FIX_FINAL.md
 ERROR_FIX_SUMMARY.md
 ERROR_RESOLUTION.md
 PRD.md
@@ -98,6 +99,7 @@ src/test/skills-analysis.test.ts
 src/test/types.test.ts
 src/test/useProfileAnalysis.test.tsx
 src/types/linkedin.ts
+src/vite-end.d.ts
 start-dev.sh
 test-basic.js
 test-build.js
