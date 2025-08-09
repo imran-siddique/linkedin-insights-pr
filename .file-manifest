@@ -44,7 +44,13 @@ src/components/features/profile/ProfileInsightsCards.tsx
 src/components/features/profile/ProfileSummary.tsx
 src/components/features/profile/SkillsOverview.tsx
 src/components/layout/AppHeader.tsx
+src/components/ui/animated-container.tsx
+src/components/ui/effects.tsx
+src/components/ui/glass-card.tsx
+src/components/ui/loading.tsx
 src/components/ui/sonner.tsx
+src/components/ui/status-indicator.tsx
+src/components/ui/ux-showcase.tsx
 src/hooks/useLinkedInScraper.ts
 src/hooks/useProfileAnalysis.tsx
 src/index.css
