@@ -32,21 +32,84 @@ export function SalaryTab({ compensationAnalysis }: SalaryTabProps) {
         </TabsList>
         
         <TabsContent value="overview" className="mt-4">
-          <div className="text-center text-muted-foreground py-8">
-            Compensation overview component to be implemented
+          {/* Compensation Overview */}
+          <div className="space-y-2">
+            <div>
+              <span className="font-medium">Estimated Salary Range:</span>
+              <span className="ml-2">
+                {compensationAnalysis.salaryRange
+                  ? `$${compensationAnalysis.salaryRange.min.toLocaleString()} - $${compensationAnalysis.salaryRange.max.toLocaleString()}`
+                  : 'N/A'}
+              </span>
+            </div>
+            <div>
+              <span className="font-medium">Median Salary:</span>
+              <span className="ml-2">
+                {compensationAnalysis.medianSalary
+                  ? `$${compensationAnalysis.medianSalary.toLocaleString()}`
+                  : 'N/A'}
+              </span>
+            </div>
+            <div>
+              <span className="font-medium">Percentile:</span>
+              <span className="ml-2">
+                {compensationAnalysis.percentile
+                  ? `${compensationAnalysis.percentile}th`
+                  : 'N/A'}
+              </span>
+            </div>
           </div>
         </TabsContent>
         
         <TabsContent value="skills" className="mt-4">
-          <div className="text-center text-muted-foreground py-8">
-            Skill impact analysis component to be implemented
-          </div>
+          {/* Skill Impact Analysis */}
+          {compensationAnalysis.skillImpact && compensationAnalysis.skillImpact.length > 0 ? (
+            <ul className="space-y-2">
+              {compensationAnalysis.skillImpact.map((skill) => (
+                <li key={skill.name} className="flex justify-between">
+                  <span>{skill.name}</span>
+                  <span className="text-sm text-muted-foreground">
+                    {skill.impact > 0 ? '+' : ''}
+                    {skill.impact}%
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="text-center text-muted-foreground py-8">
+              No skill impact data available.
+            </div>
+          )}
         </TabsContent>
         
         <TabsContent value="benchmarks" className="mt-4">
-          <div className="text-center text-muted-foreground py-8">
-            Salary benchmarks component to be implemented
-          </div>
+          {/* Salary Benchmarks */}
+          {compensationAnalysis.benchmarks && compensationAnalysis.benchmarks.length > 0 ? (
+            <table className="min-w-full text-left border">
+              <thead>
+                <tr>
+                  <th className="px-4 py-2 border-b">Title</th>
+                  <th className="px-4 py-2 border-b">Median Salary</th>
+                  <th className="px-4 py-2 border-b">Location</th>
+                </tr>
+              </thead>
+              <tbody>
+                {compensationAnalysis.benchmarks.map((bm, idx) => (
+                  <tr key={idx}>
+                    <td className="px-4 py-2 border-b">{bm.title}</td>
+                    <td className="px-4 py-2 border-b">
+                      {bm.medianSalary ? `$${bm.medianSalary.toLocaleString()}` : 'N/A'}
+                    </td>
+                    <td className="px-4 py-2 border-b">{bm.location || 'N/A'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <div className="text-center text-muted-foreground py-8">
+              No benchmark data available.
+            </div>
+          )}
         </TabsContent>
       </Tabs>
     </div>

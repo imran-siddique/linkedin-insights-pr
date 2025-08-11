@@ -4,7 +4,11 @@
 
 @layer base {
   * {
-    @apply border-border;
+    /* Remove @apply border-border unless you have a border-border utility defined in your Tailwind config.
+       If not, this will cause a build error. If you want a default border color, use border-color directly or define the utility. */
+    /* @apply border-border; */
+    /* Or, if you want to set a default border color: */
+    border-color: hsl(var(--border));
   }
 
   body {
