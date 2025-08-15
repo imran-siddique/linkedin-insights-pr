@@ -30,6 +30,8 @@ export interface ProfileData {
   trending?: boolean
   recentActivitySpike?: boolean
   networkVelocity?: number
+  // LinkedIn URL for direct access
+  linkedinUrl?: string
 }
 
 export interface Recommendation {
