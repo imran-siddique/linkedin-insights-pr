@@ -1,7 +1,8 @@
 import React from 'react'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Users, CircleNotch, TrendUp, TrendDown, Equals, Sparkle } from '@phosphor-icons/react'
+import { Button } from '@/components/ui/button'
+import { Users, CircleNotch, TrendUp, TrendDown, Equals, Sparkle, LinkedinLogo, ArrowSquareOut } from '@phosphor-icons/react'
 import type { ProfileData } from '@/types/linkedin'
 
 interface ProfileSummaryProps {
@@ -50,7 +51,54 @@ export function ProfileSummary({ profileData }: ProfileSummaryProps) {
               <p className="text-sm text-muted-foreground">Key profile metrics and growth indicators</p>
             </div>
           </div>
+          
+          {/* LinkedIn Profile Link */}
+          {profileData.linkedinUrl && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex items-center space-x-2 hover:bg-blue-50 hover:border-blue-300 transition-colors"
+              onClick={() => window.open(profileData.linkedinUrl, '_blank')}
+            >
+              <LinkedinLogo className="h-4 w-4 text-blue-600" />
+              <span className="text-blue-600">View on LinkedIn</span>
+              <ArrowSquareOut className="h-3 w-3 text-blue-600" />
+            </Button>
+          )}
         </div>
+
+        {/* Data Quality Indicator */}
+        {(profileData.dataFreshness || profileData.confidenceScore) && (
+          <div className="mb-6 p-3 bg-white/30 rounded-lg border border-white/40">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                <span className="text-sm font-medium text-foreground">Data Quality</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                {profileData.dataFreshness && (
+                  <Badge 
+                    variant="outline" 
+                    className={`text-xs ${
+                      profileData.dataFreshness === 'real-time' 
+                        ? 'bg-green-50 text-green-700 border-green-200' 
+                        : profileData.dataFreshness === 'cached'
+                        ? 'bg-yellow-50 text-yellow-700 border-yellow-200'
+                        : 'bg-gray-50 text-gray-700 border-gray-200'
+                    }`}
+                  >
+                    {profileData.dataFreshness}
+                  </Badge>
+                )}
+                {profileData.confidenceScore && (
+                  <Badge variant="secondary" className="text-xs">
+                    {profileData.confidenceScore}% confidence
+                  </Badge>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Professional Level */}

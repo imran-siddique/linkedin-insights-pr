@@ -1,13 +1,11 @@
 import React from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Lightbulb, Brain, TrendUp, ChartBar, CurrencyDollar, Target } from '@phosphor-icons/react'
+import { Lightbulb, Brain, TrendUp, ChartBar, CurrencyDollar } from '@phosphor-icons/react'
 import { RecommendationsTab } from './tabs/RecommendationsTab'
 import { SkillsAnalysisTab } from './tabs/SkillsAnalysisTab'
-import { SkillInsightsTab } from './tabs/SkillInsightsTab'
 import { TrendsTab } from './tabs/TrendsTab'
 import { CompetitiveTab } from './tabs/CompetitiveTab'
 import { SalaryTab } from './tabs/SalaryTab'
-import { StrategyTab } from './tabs/StrategyTab'
 import type {
   Recommendation,
   TrendingTopic,
@@ -36,7 +34,7 @@ export function AnalysisTabs({
 }: AnalysisTabsProps) {
   return (
     <Tabs defaultValue="recommendations" className="w-full">
-      <TabsList className="grid w-full grid-cols-7">
+      <TabsList className="grid w-full grid-cols-5">
         <TabsTrigger value="recommendations">
           <Lightbulb className="h-4 w-4 mr-2" />
           Recommendations
@@ -44,10 +42,6 @@ export function AnalysisTabs({
         <TabsTrigger value="skills-analysis">
           <Brain className="h-4 w-4 mr-2" />
           Skills Analysis
-        </TabsTrigger>
-        <TabsTrigger value="skills">
-          <Brain className="h-4 w-4 mr-2" />
-          Skill Insights
         </TabsTrigger>
         <TabsTrigger value="trends">
           <TrendUp className="h-4 w-4 mr-2" />
@@ -61,10 +55,6 @@ export function AnalysisTabs({
           <CurrencyDollar className="h-4 w-4 mr-2" />
           Salary
         </TabsTrigger>
-        <TabsTrigger value="strategy">
-          <Target className="h-4 w-4 mr-2" />
-          Strategy
-        </TabsTrigger>
       </TabsList>
 
       <TabsContent value="recommendations" className="mt-6">
@@ -73,10 +63,6 @@ export function AnalysisTabs({
 
       <TabsContent value="skills-analysis" className="mt-6">
         <SkillsAnalysisTab skillsAnalysis={skillsAnalysis} />
-      </TabsContent>
-
-      <TabsContent value="skills" className="mt-6">
-        <SkillInsightsTab skillInsights={skillInsights} />
       </TabsContent>
 
       <TabsContent value="trends" className="mt-6">
@@ -89,10 +75,6 @@ export function AnalysisTabs({
 
       <TabsContent value="salary" className="mt-6">
         <SalaryTab compensationAnalysis={compensationAnalysis} />
-      </TabsContent>
-
-      <TabsContent value="strategy" className="mt-6">
-        <StrategyTab />
       </TabsContent>
     </Tabs>
   )
