@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Users, CircleNotch, TrendUp, TrendDown, Equals, Sparkle, LinkedinLogo, ArrowSquareOut } from '@phosphor-icons/react'
 import type { ProfileData } from '@/types/linkedin'
+import { getLinkedInSectionUrl } from '@/lib/utils'
 
 interface ProfileSummaryProps {
   profileData: ProfileData
@@ -135,16 +136,29 @@ export function ProfileSummary({ profileData }: ProfileSummaryProps) {
               </p>
             </div>
             <div className="space-y-3">
-              <div className="flex items-center space-x-3">
-                <div className="p-2 bg-accent/10 rounded-lg">
-                  <Users className="h-4 w-4 text-accent" />
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 bg-accent/10 rounded-lg">
+                    <Users className="h-4 w-4 text-accent" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold text-foreground">
+                      {profileData.followers.toLocaleString()}
+                    </p>
+                    <p className="text-xs text-muted-foreground">followers</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-2xl font-bold text-foreground">
-                    {profileData.followers.toLocaleString()}
-                  </p>
-                  <p className="text-xs text-muted-foreground">followers</p>
-                </div>
+                {profileData.linkedinUrl && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="flex items-center space-x-1 text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                    onClick={() => window.open(getLinkedInSectionUrl(profileData.linkedinUrl!, 'followers'), '_blank')}
+                  >
+                    <span>View</span>
+                    <ArrowSquareOut className="h-3 w-3" />
+                  </Button>
+                )}
               </div>
               
               {profileData.followerGrowthTrend && (

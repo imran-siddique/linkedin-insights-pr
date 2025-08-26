@@ -2,9 +2,11 @@ import React from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
-import { Users, ChatCircle, TrendUp, Target, ArrowUp, ArrowDown } from '@phosphor-icons/react'
+import { Button } from '@/components/ui/button'
+import { Users, ChatCircle, TrendUp, Target, ArrowUp, ArrowDown, ArrowSquareOut } from '@phosphor-icons/react'
 import { StaggerContainer, StaggerItem } from '@/components/ui/animated-container'
 import type { ProfileData } from '@/types/linkedin'
+import { getLinkedInSectionUrl } from '@/lib/utils'
 
 interface MetricCardsProps {
   profileData: ProfileData
@@ -17,6 +19,8 @@ interface MetricCardProps {
   icon: React.ElementType
   color?: 'primary' | 'accent' | 'green' | 'blue'
   description?: string
+  linkedinUrl?: string
+  linkedinSection?: 'followers' | 'following' | 'recent-activity'
 }
 
 const MetricCard = ({ 
@@ -25,7 +29,9 @@ const MetricCard = ({
   change, 
   icon: Icon, 
   color = 'primary',
-  description 
+  description,
+  linkedinUrl,
+  linkedinSection
 }: MetricCardProps) => {
   const colorClasses = {
     primary: 'from-primary/10 to-primary/20 text-primary border-primary/20',
@@ -61,9 +67,22 @@ const MetricCard = ({
         </div>
         
         <div className="space-y-2">
-          <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
-            {title}
-          </p>
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+              {title}
+            </p>
+            {linkedinUrl && linkedinSection && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="flex items-center space-x-1 text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-50 h-6 px-2"
+                onClick={() => window.open(getLinkedInSectionUrl(linkedinUrl, linkedinSection), '_blank')}
+              >
+                <span>View</span>
+                <ArrowSquareOut className="h-3 w-3" />
+              </Button>
+            )}
+          </div>
           <p className="text-3xl font-bold text-foreground group-hover:scale-105 transition-transform">
             {value}
           </p>
@@ -105,6 +124,8 @@ export function MetricCards({ profileData }: MetricCardsProps) {
               icon={Users}
               color="primary"
               description="followers"
+              linkedinUrl={profileData.linkedinUrl}
+              linkedinSection="followers"
             />
           </StaggerItem>
           
@@ -129,6 +150,8 @@ export function MetricCards({ profileData }: MetricCardsProps) {
               icon={ChatCircle}
               color="green"
               description="total posts"
+              linkedinUrl={profileData.linkedinUrl}
+              linkedinSection="recent-activity"
             />
           </StaggerItem>
           

@@ -1,9 +1,11 @@
 import React from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
-import { ChartBar, Info } from '@phosphor-icons/react'
+import { ChartBar, Info, ArrowSquareOut } from '@phosphor-icons/react'
 import type { ProfileData, ScrapingResult } from '@/types/linkedin'
+import { getLinkedInSectionUrl } from '@/lib/utils'
 
 interface FollowerBenchmarkCardProps {
   profileData: ProfileData
@@ -45,6 +47,17 @@ export function FollowerBenchmarkCard({ profileData, scrapingResult }: FollowerB
                     {profileData.roleLevel?.replace('_', ' ')} level
                   </p>
                 </div>
+                {profileData.linkedinUrl && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="ml-auto flex items-center space-x-1 text-xs hover:bg-blue-50 hover:border-blue-300"
+                    onClick={() => window.open(getLinkedInSectionUrl(profileData.linkedinUrl!, 'followers'), '_blank')}
+                  >
+                    <span>View Followers</span>
+                    <ArrowSquareOut className="h-3 w-3" />
+                  </Button>
+                )}
               </div>
             </div>
 
