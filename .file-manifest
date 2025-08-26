@@ -65,6 +65,8 @@ src/lib/utils.ts
 src/main.css
 src/main.tsx
 src/prd.md
+src/test/setup.ts
 src/types/linkedin.ts
 start-dev.sh
 vite.config.ts
+vitest.config.ts
