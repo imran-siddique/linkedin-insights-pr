@@ -53,6 +53,9 @@ src/components/ui/loading.tsx
 src/components/ui/sonner.tsx
 src/components/ui/status-indicator.tsx
 src/components/ui/ux-showcase.tsx
+src/hooks/index.ts
+src/hooks/spark.ts
+src/hooks/useKV.ts
 src/hooks/useLinkedInScraper.ts
 src/hooks/useProfileAnalysis.tsx
 src/index.css
@@ -70,6 +73,7 @@ src/main.tsx
 src/prd.md
 src/test/setup.ts
 src/types/linkedin.ts
+src/types/spark.ts
 start-dev.sh
 vite.config.ts
 vitest.config.ts

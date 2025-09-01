@@ -1,9 +1,8 @@
 import react from "@vitejs/plugin-react"
 import { defineConfig } from "vite"
 import { resolve } from 'path'
-import { fileURLToPath, URL } from 'node:url'
 
-const projectRoot = process.env.PROJECT_ROOT || fileURLToPath(new URL('.', import.meta.url))
+const projectRoot = process.env.PROJECT_ROOT || import.meta.dirname
 
 // https://vite.dev/config/
 export default defineConfig(({ command, mode }) => {
