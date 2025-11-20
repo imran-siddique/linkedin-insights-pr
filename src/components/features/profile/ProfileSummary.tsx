@@ -127,12 +127,12 @@ export function ProfileSummary({ profileData }: ProfileSummaryProps) {
             </div>
           </div>
 
-          {/* Network Size */}
+          {/* Network Metrics */}
           <div className="space-y-4">
             <div className="flex items-center space-x-2">
               <div className="w-2 h-2 bg-accent rounded-full"></div>
               <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
-                Network Size
+                Network Metrics
               </p>
             </div>
             <div className="space-y-3">
@@ -173,7 +173,7 @@ export function ProfileSummary({ profileData }: ProfileSummaryProps) {
               
               <div className="text-xs text-muted-foreground bg-white/30 rounded-lg p-2">
                 <span className="font-medium">Connection ratio:</span> {' '}
-                {(profileData.followers / profileData.connections).toFixed(2)}x
+                {(profileData.connections / profileData.followers).toFixed(2)}x
               </div>
             </div>
           </div>
