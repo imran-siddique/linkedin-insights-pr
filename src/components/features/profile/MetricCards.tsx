@@ -117,13 +117,13 @@ export function MetricCards({ profileData }: MetricCardsProps) {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <StaggerItem>
             <MetricCard
-              title="Network Size"
+              title="Followers"
               value={profileData.followers.toLocaleString()}
               change={profileData.followerGrowthTrend === 'increasing' ? 12 : 
                       profileData.followerGrowthTrend === 'decreasing' ? -5 : 0}
               icon={Users}
               color="primary"
-              description="followers"
+              description="people following you"
               linkedinUrl={profileData.linkedinUrl}
               linkedinSection="followers"
             />
